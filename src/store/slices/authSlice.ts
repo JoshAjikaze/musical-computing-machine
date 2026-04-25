@@ -24,6 +24,9 @@ export const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
+    setTempAccessToken(state, action: PayloadAction<string>) {
+      state.token = action.payload
+    },
     setPendingEmail(state, action: PayloadAction<string>) {
       state.pendingEmail = action.payload
     },
@@ -50,5 +53,5 @@ export const authSlice = createSlice({
   },
 })
 
-export const { setCredentials, setPendingEmail, logout, updateUser } = authSlice.actions
+export const { setCredentials, setPendingEmail, logout, updateUser, setTempAccessToken } = authSlice.actions
 export default authSlice.reducer

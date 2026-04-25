@@ -12,7 +12,7 @@ import {
   Form, FormField, FormItem, FormLabel, FormControl, FormMessage,
 } from "@/components/ui/form"
 import { useAppDispatch } from "@/hooks/redux"
-import { setCredentials } from "@/store/slices/authSlice"
+import { setCredentials, setTempAccessToken } from "@/store/slices/authSlice"
 import { useLoginMutation, useGetCurrentUserQuery, normaliseUser } from "@/store/api/vibeApi"
 import { toast } from "sonner"
 
@@ -52,7 +52,7 @@ export function LoginPage() {
     try {
       const result = await login(values).unwrap()
       const token = result.access_token
-      localStorage.setItem("vibe_token", token)
+      dispatch(setTempAccessToken(token))
       setAccessToken(token)
       toast.success("Welcome back!")
     } catch {
