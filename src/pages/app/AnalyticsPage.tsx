@@ -1,32 +1,45 @@
 import { useState } from "react"
 import {
   TrendingUp, Download, Users, Wallet, MoreVertical, ChevronDown,
+  Music,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { StatCard } from "@/components/app/StatCard"
 import { UploadPanel } from "@/components/app/UploadPanel"
 import { useAppSelector } from "@/hooks/redux"
+import { useGetArtistDashboardQuery, useGetArtistStatsQuery } from "@/store/api/vibeApi"
 
 // ── Mock data (matches the designs exactly) ───────────────
-const STATS = [
-  { label: "Total Streams",   value: "270.7M", change: 16,   icon: <TrendingUp className="h-5 w-5 text-purple-400" /> },
-  { label: "Total Downloads", value: "298.7K", change: -0.4, icon: <Download   className="h-5 w-5 text-vibe-red"    /> },
-  { label: "Followers",       value: "131.7M", change: 8,    icon: <Users      className="h-5 w-5 text-orange-400"  /> },
-  { label: "Earnings",        value: "$10.5M", change: 2,    icon: <Wallet     className="h-5 w-5 text-green-400"   /> },
-]
 
-const TOP_TRACKS = [
-  { rank: 1, title: "Mad over you",   plays: "20, 099, 221" },
-  { rank: 2, title: "Revolve",        plays: "5, 109, 077"  },
-  { rank: 3, title: "Umbrella",       plays: "3, 100, 042"  },
-  { rank: 4, title: "Living good",    plays: "2, 826, 316"  },
-  { rank: 5, title: "Super chickens", plays: "1, 049, 829"  },
-]
 
 export function AnalyticsPage() {
   const [uploadOpen, setUploadOpen] = useState(false)
   const { user } = useAppSelector((s) => s.auth)
   const displayName = user?.displayName ?? "Desire"
+
+  const { data: DashboardData, isFetching: DashboardFetching } = useGetArtistDashboardQuery()
+  const { data: StatsData } = useGetArtistStatsQuery()
+  console.log(StatsData)
+
+  const totalfollowers = DashboardFetching ? "0M" : `${DashboardData?.stats?.total_followers}M`;
+  const totalTracks = DashboardFetching ? "0" : `${DashboardData?.stats?.total_tracks}`;
+
+  const STATS = [
+    { label: "Total Streams", value: "0M", change: 16, icon: <TrendingUp className="h-5 w-5 text-purple-400" /> },
+    { label: "Total Downloads", value: "0K", change: -0.4, icon: <Download className="h-5 w-5 text-vibe-red" /> },
+    { label: "Total Tracks", value: `${totalTracks}`, change: 2, icon: <Music className="h-5 w-5 text-green-400" /> },
+    { label: "Followers", value: `${totalfollowers}`, change: 8, icon: <Users className="h-5 w-5 text-orange-400" /> },
+    { label: "Earnings", value: "$0", change: 2, icon: <Wallet className="h-5 w-5 text-green-400" /> },
+  ]
+
+  const TOP_TRACKS = [
+    { rank: 1, title: "Mad over you", plays: "20, 099, 221" },
+    { rank: 2, title: "Revolve", plays: "5, 109, 077" },
+    { rank: 3, title: "Umbrella", plays: "3, 100, 042" },
+    { rank: 4, title: "Living good", plays: "2, 826, 316" },
+    { rank: 5, title: "Super chickens", plays: "1, 049, 829" },
+  ]
+
 
   return (
     <>

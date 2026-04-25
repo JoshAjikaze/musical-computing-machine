@@ -1,6 +1,7 @@
 import { Provider } from "react-redux"
+import { PersistGate } from "redux-persist/integration/react"
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom"
-import { store } from "./store"
+import { store, persistor } from "./store"
 import { ErrorBoundary, SectionErrorBoundary } from "./components/ui/error-boundary"
 import { Navbar } from "./components/layout/Navbar"
 import { AppLayout } from "./components/app/AppLayout"
@@ -47,14 +48,14 @@ function Page({ children }: { children: React.ReactNode }) {
 
 function App() {
   return (
-    // Top-level boundary — catches anything that escapes page boundaries
     <ErrorBoundary>
       <Provider store={store}>
-        <BrowserRouter>
-          <Layout />
-          <Toaster />
-          <Routes>
-            {/* Public */}
+        <PersistGate loading={null} persistor={persistor}>
+          <BrowserRouter>
+            <Layout />
+            <Toaster />
+            <Routes>
+              {/* Public */}
             <Route path="/"                element={<Page><LandingPage /></Page>} />
 
             {/* Auth */}
@@ -107,8 +108,9 @@ function App() {
             </Route>
 
             <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </BrowserRouter>
+            </Routes>
+          </BrowserRouter>
+        </PersistGate>
       </Provider>
     </ErrorBoundary>
   )

@@ -34,6 +34,20 @@ export interface TokenResponse {
   token_type: string
 }
 
+export interface DashboardResponse {
+  artist_name: any
+  verification_status: string
+  stats: Stats
+  premium_access: boolean
+  message: string
+}
+
+export interface Stats {
+  total_tracks: number
+  total_followers: number
+}
+
+
 export interface UserResponse {
   id: string
   email: string
@@ -290,7 +304,7 @@ export const vibeApi = createApi({
     }),
 
     // ── Artist Management ─────────────────────────────────────────
-    getArtistDashboard: b.query<unknown, void>({ query: () => '/artist/dashboard', providesTags: ['Dashboard'] }),
+    getArtistDashboard: b.query<DashboardResponse, void>({ query: () => '/artist/dashboard', providesTags: ['Dashboard'] }),
     getArtistPremiumDashboard: b.query<unknown, void>({ query: () => '/artist/premium/dashboard', providesTags: ['Dashboard'] }),
 
     /** POST /artist/upload  multipart: { title, audio, cover?, price?, is_for_sale? } */
