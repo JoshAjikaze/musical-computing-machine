@@ -160,7 +160,6 @@ const rawBase = fetchBaseQuery({
   baseUrl: (import.meta as unknown as { env: Record<string, string> }).env.VITE_API_BASE_URL
     ?? 'https://vibegarage-backend.onrender.com',
   prepareHeaders: (headers, { getState }) => {
-    // const token = localStorage.getItem("vibe_token") || (getState() as RootState).auth.token
     const token = (getState() as RootState).auth.token
     if (token) headers.set('Authorization', `Bearer ${token}`)
     return headers

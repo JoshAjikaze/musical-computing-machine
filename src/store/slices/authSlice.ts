@@ -9,15 +9,14 @@ interface AuthState {
   pendingEmail: string | null  // email awaiting verification after signup
 }
 
-const storedToken = localStorage.getItem('vibe_token')
-const storedUser  = localStorage.getItem('vibe_user')
+const storedUser = localStorage.getItem('vibe_user')
 
 const initialState: AuthState = {
-  user:           storedUser ? JSON.parse(storedUser) : null,
-  token:          storedToken,
-  isAuthenticated:!!storedToken,
-  isLoading:      false,
-  pendingEmail:   null,
+  user: storedUser ? JSON.parse(storedUser) : null,
+  token: "",
+  isAuthenticated: false,
+  isLoading: false,
+  pendingEmail: null,
 }
 
 export const authSlice = createSlice({
@@ -34,14 +33,12 @@ export const authSlice = createSlice({
       state.user = action.payload.user
       state.token = action.payload.token
       state.isAuthenticated = true
-      localStorage.setItem('vibe_token', action.payload.token)
       localStorage.setItem('vibe_user', JSON.stringify(action.payload.user))
     },
     logout(state) {
       state.user = null
       state.token = null
       state.isAuthenticated = false
-      localStorage.removeItem('vibe_token')
       localStorage.removeItem('vibe_user')
     },
     updateUser(state, action: PayloadAction<Partial<User>>) {
