@@ -18,14 +18,15 @@ export function AnalyticsPage() {
   const displayName = user?.displayName ?? "Desire"
 
   const { data: DashboardData, isFetching: DashboardFetching } = useGetArtistDashboardQuery()
-  const { data: StatsData } = useGetArtistStatsQuery()
+  const { data: StatsData, isFetching: StatsFetching } = useGetArtistStatsQuery()
   console.log(StatsData)
 
   const totalfollowers = DashboardFetching ? "0M" : `${DashboardData?.stats?.total_followers}M`;
-  const totalTracks = DashboardFetching ? "0" : `${DashboardData?.stats?.total_tracks}`;
+  const totalTracks = StatsFetching ? "0" : `${StatsData?.total_tracks}`;
+  const totalStreams = StatsFetching ? "0M" : `${StatsData?.total_plays}M`; 
 
   const STATS = [
-    { label: "Total Streams", value: "0M", change: 16, icon: <TrendingUp className="h-5 w-5 text-purple-400" /> },
+    { label: "Total Streams", value: `${totalStreams}`, change: 16, icon: <TrendingUp className="h-5 w-5 text-purple-400" /> },
     { label: "Total Downloads", value: "0K", change: -0.4, icon: <Download className="h-5 w-5 text-vibe-red" /> },
     { label: "Total Tracks", value: `${totalTracks}`, change: 2, icon: <Music className="h-5 w-5 text-green-400" /> },
     { label: "Followers", value: `${totalfollowers}`, change: 8, icon: <Users className="h-5 w-5 text-orange-400" /> },
