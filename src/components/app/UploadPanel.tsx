@@ -554,6 +554,7 @@ function Single1Form({ onNext }: {
       singleTitle: v.singleTitle, singleCoverArt: coverArt,
       singleYear: v.singleYear, singleReleaseDate: v.singleReleaseDate,
     })
+    console.log(v)
   }
   return (
     <Form {...form}>

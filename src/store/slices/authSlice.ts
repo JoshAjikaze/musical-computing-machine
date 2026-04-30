@@ -1,5 +1,6 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
 import type { User } from '../api/vibeApi'
+import { toast } from 'sonner'
 
 interface AuthState {
   user: User | null
@@ -40,6 +41,7 @@ export const authSlice = createSlice({
       state.token = null
       state.isAuthenticated = false
       localStorage.removeItem('vibe_user')
+      toast.info("You are logged out")
     },
     updateUser(state, action: PayloadAction<Partial<User>>) {
       if (state.user) {

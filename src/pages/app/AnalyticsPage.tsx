@@ -8,6 +8,7 @@ import { StatCard } from "@/components/app/StatCard"
 import { UploadPanel } from "@/components/app/UploadPanel"
 import { useAppSelector } from "@/hooks/redux"
 import { useGetArtistDashboardQuery, useGetArtistStatsQuery } from "@/store/api/vibeApi"
+import { formatCurrency, formatNumber, formatPlays } from "@/lib/formatters"
 
 // ── Mock data (matches the designs exactly) ───────────────
 
@@ -21,16 +22,17 @@ export function AnalyticsPage() {
   const { data: StatsData, isFetching: StatsFetching } = useGetArtistStatsQuery()
   console.log(StatsData)
 
-  const totalfollowers = DashboardFetching ? "0M" : `${DashboardData?.stats?.total_followers}M`;
-  const totalTracks = StatsFetching ? "0" : `${StatsData?.total_tracks}`;
-  const totalStreams = StatsFetching ? "0M" : `${StatsData?.total_plays}M`; 
+  const totalfollowers = DashboardFetching ? "0M" : formatNumber(DashboardData?.stats?.total_followers as number);
+  const totalTracks = StatsFetching ? "0" : formatNumber(StatsData?.total_tracks as number);
+  const totalStreams = StatsFetching ? "0M" : formatPlays(StatsData?.total_plays as number);
+  const totalEarnings = formatCurrency(1000000);
 
   const STATS = [
     { label: "Total Streams", value: `${totalStreams}`, change: 16, icon: <TrendingUp className="h-5 w-5 text-purple-400" /> },
     { label: "Total Downloads", value: "0K", change: -0.4, icon: <Download className="h-5 w-5 text-vibe-red" /> },
     { label: "Total Tracks", value: `${totalTracks}`, change: 2, icon: <Music className="h-5 w-5 text-green-400" /> },
     { label: "Followers", value: `${totalfollowers}`, change: 8, icon: <Users className="h-5 w-5 text-orange-400" /> },
-    { label: "Earnings", value: "$0", change: 2, icon: <Wallet className="h-5 w-5 text-green-400" /> },
+    { label: "Earnings", value: `${totalEarnings}`, change: 2, icon: <Wallet className="h-5 w-5 text-green-400" /> },
   ]
 
   const TOP_TRACKS = [
