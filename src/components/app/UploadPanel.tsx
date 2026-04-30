@@ -16,6 +16,8 @@ import {
 import { FileDropzone } from "@/components/app/FileDropzone"
 import { StepProgressBar } from "@/components/app/StepProgressBar"
 import { cn } from "@/lib/utils"
+import { useUploadTrackArtistMutation } from "@/store/api/vibeApi"
+import { toast } from "sonner"
 
 // ── Types ────────────────────────────────────────────────
 type UploadStep =
@@ -190,6 +192,9 @@ export function UploadPanel({ open, onClose }: UploadPanelProps) {
                   <p className="text-sm text-vibe-text-secondary mb-5">Share details of your new single here.</p>
                   <StepProgressBar steps={2} current={2} className="mb-7" />
                   <Single2Form
+                    singleTitle={state.singleTitle}
+                    coverArt={state.singleCoverArt}
+                    releaseDate={state.singleReleaseDate}
                     featuredArtists={state.featuredArtists}
                     onAddArtist={(name) => dispatch({ type: "ADD_FEATURED_ARTIST", name })}
                     onSubmit={() => dispatch({ type: "SUBMIT_SINGLE" })}
@@ -598,21 +603,25 @@ function Single1Form({ onNext }: {
 }
 
 function Single2Form({
-  featuredArtists, onAddArtist, onSubmit,
+  singleTitle,
+  coverArt,
+  releaseDate,
+  featuredArtists,
+  onAddArtist,
+  onSubmit,
 }: {
+  singleTitle: string
+  coverArt: File | null
+  releaseDate: string
   featuredArtists: string[]
   onAddArtist: (name: string) => void
   onSubmit: () => void
 }) {
-  const [audioFile, setAudioFile]   = useState<File | null>(null)
+  const [audioFile, setAudioFile]     = useState<File | null>(null)
+  const [audioError, setAudioError]   = useState("")
   const [artistInput, setArtistInput] = useState("")
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isSaving, setIsSaving]     = useState(false)
 
-  // Seed the list with the design example if none added yet
-  const displayArtists = featuredArtists.length
-    ? featuredArtists
-    : ["Deeze", "Mr. Hill"]
+  const [uploadTrackArtist, { isLoading: isSubmitting }] = useUploadTrackArtistMutation()
 
   const handleAdd = () => {
     if (artistInput.trim()) {
@@ -622,26 +631,42 @@ function Single2Form({
   }
 
   const handleSubmit = async () => {
-    setIsSubmitting(true)
-    await new Promise((r) => setTimeout(r, 800))
-    setIsSubmitting(false)
-    onSubmit()
-  }
+    if (!audioFile) {
+      setAudioError("Please upload an audio file before submitting.")
+      return
+    }
+    setAudioError("")
 
-  const handleSaveDraft = async () => {
-    setIsSaving(true)
-    await new Promise((r) => setTimeout(r, 600))
-    setIsSaving(false)
-    onSubmit()
+    const formData = new FormData()
+    formData.append("title", singleTitle)
+    formData.append("audio", audioFile)
+    formData.append("is_for_sale", "false")
+    formData.append("price", String(0))
+    if (coverArt) formData.append("cover", coverArt)
+
+    try {
+      await uploadTrackArtist(formData).unwrap()
+      toast.success("Single uploaded successfully!")
+      onSubmit()
+    } catch {
+      toast.error("Upload failed. Please try again.")
+    }
   }
 
   return (
     <div className="flex flex-col gap-5 flex-1">
       {/* Upload track */}
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         <p className="text-sm font-medium text-vibe-text-secondary">Upload Track</p>
-        <FileDropzone accept=".mp3,.mwv,.wav" hint="MP3, MWV or WAV - Max file size 5MB" maxSizeMB={5}
-          value={audioFile} onChange={setAudioFile} type="audio" />
+        <FileDropzone
+          accept=".mp3,.wav,.m4a"
+          hint="MP3, WAV or M4A – Max file size 5MB"
+          maxSizeMB={5}
+          value={audioFile}
+          onChange={(f) => { setAudioFile(f); if (f) setAudioError("") }}
+          type="audio"
+        />
+        {audioError && <p className="text-xs text-vibe-red">{audioError}</p>}
       </div>
 
       {/* Add featured artist */}
@@ -669,10 +694,10 @@ function Single2Form({
         </div>
 
         {/* Featured artists list */}
-        {displayArtists.length > 0 && (
+        {featuredArtists.length > 0 && (
           <div className="space-y-2">
             <p className="text-sm font-medium text-vibe-text-secondary">Featured artists</p>
-            {displayArtists.map((artist, i) => (
+            {featuredArtists.map((artist, i) => (
               <div key={i} className="flex items-center justify-between rounded-sm bg-vibe-onyx-300 border border-vibe-onyx-400 px-4 py-2.5">
                 <span className="text-sm text-vibe-text-secondary">{i + 1}.&nbsp;&nbsp;{artist}</span>
                 <button type="button" className="text-xs text-vibe-text-muted hover:text-white transition-colors flex items-center gap-1">
@@ -684,14 +709,39 @@ function Single2Form({
         )}
       </div>
 
+      {/* Submission summary — show what will be sent */}
+      {(singleTitle || releaseDate) && (
+        <div className="rounded-lg border border-vibe-onyx-400 bg-vibe-onyx-300 px-4 py-3 space-y-1">
+          <p className="text-xs text-vibe-text-muted uppercase tracking-wide font-medium">Submitting</p>
+          {singleTitle && (
+            <p className="text-sm text-vibe-text-primary">
+              <span className="text-vibe-text-muted">Title: </span>{singleTitle}
+            </p>
+          )}
+          {releaseDate && (
+            <p className="text-sm text-vibe-text-primary">
+              <span className="text-vibe-text-muted">Release: </span>
+              {new Date(releaseDate).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}
+            </p>
+          )}
+          {coverArt && (
+            <p className="text-sm text-vibe-text-primary">
+              <span className="text-vibe-text-muted">Cover: </span>{coverArt.name}
+            </p>
+          )}
+        </div>
+      )}
+
       {/* Actions */}
       <div className="mt-auto pt-2 flex gap-3">
-        <Button variant="outline" size="lg" rounded="full" className="flex-1"
-          onClick={handleSaveDraft} loading={isSaving}>
-          Save as draft
-        </Button>
-        <Button size="lg" rounded="full" className="flex-1"
-          onClick={handleSubmit} loading={isSubmitting}>
+        <Button
+          size="lg"
+          rounded="full"
+          className="w-full"
+          onClick={handleSubmit}
+          loading={isSubmitting}
+          disabled={isSubmitting}
+        >
           Submit for review
         </Button>
       </div>
