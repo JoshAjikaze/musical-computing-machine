@@ -640,9 +640,8 @@ function Single2Form({
     const formData = new FormData()
     formData.append("title", singleTitle)
     formData.append("audio", audioFile)
-    formData.append("is_for_sale", "false")
-    formData.append("price", String(0))
     if (coverArt) formData.append("cover", coverArt)
+    // price and is_for_sale are not collected in the single flow — omit them
 
     try {
       await uploadTrackArtist(formData).unwrap()
