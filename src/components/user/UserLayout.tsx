@@ -1,17 +1,13 @@
 import { useState } from "react"
 import { Outlet, Link, useLocation } from "react-router-dom"
-import { Home, Compass, Library, Plus, Music, Heart, Menu, X, Search } from "lucide-react"
+import { Home, Compass, Library, Plus, Heart, Menu, X, Search, Music2 } from "lucide-react"
 import { AnimatePresence, motion } from "framer-motion"
 import { VibeGarageLogo } from "@/components/ui/logo"
 import { PlayerBar } from "@/components/app/PlayerBar"
+import { QueuePanel } from "@/components/app/QueuePanel"
+import { CreatePlaylistDialog } from "@/components/app/CreatePlaylistDialog"
 import { useAppSelector } from "@/hooks/redux"
 import { cn } from "@/lib/utils"
-
-// ── Mock playlists ────────────────────────────────────────
-const USER_PLAYLISTS = [
-  { id: "pl1", label: "Liked music", sub: "Auto playlist", icon: Heart  },
-  { id: "pl2", label: "Worship",     sub: "My playlist",   icon: Music  },
-]
 
 const NAV_LINKS = [
   { href: "/listen",         label: "Home",    icon: Home    },
@@ -19,9 +15,16 @@ const NAV_LINKS = [
   { href: "/listen/library", label: "Library", icon: Library },
 ]
 
-// ── Sidebar content ───────────────────────────────────────
-function SidebarContent({ onClose }: { onClose?: () => void }) {
+// ── Sidebar ───────────────────────────────────────────────
+function SidebarContent({
+  onClose,
+  onNewPlaylist,
+}: {
+  onClose?: () => void
+  onNewPlaylist: () => void
+}) {
   const location = useLocation()
+  const playlists = useAppSelector((s) => s.playlists.playlists)
 
   const isActive = (href: string) =>
     href === "/listen" ? location.pathname === "/listen" : location.pathname.startsWith(href)
@@ -62,27 +65,59 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
       <div className="mx-2 my-4 h-px bg-vibe-onyx-400" />
 
       {/* New playlist button */}
-      <button className="flex items-center gap-2 px-4 py-2.5 rounded-md bg-vibe-onyx-300 border border-vibe-onyx-400 text-sm font-medium text-vibe-text-secondary hover:text-white hover:bg-vibe-onyx-400 transition-colors mb-4 mx-1">
+      <button
+        onClick={onNewPlaylist}
+        className="flex items-center gap-2 px-4 py-2.5 rounded-md bg-vibe-onyx-300 border border-vibe-onyx-400 text-sm font-medium text-vibe-text-secondary hover:text-white hover:bg-vibe-onyx-400 transition-colors mb-3 mx-1"
+      >
         <Plus className="h-4 w-4" />
         New playlist
       </button>
 
-      {/* User playlists */}
-      <div className="flex flex-col gap-1">
-        {USER_PLAYLISTS.map((pl) => (
-          <button
+      {/* Liked music — always present */}
+      <Link
+        to="/listen/library"
+        onClick={onClose}
+        className="flex items-center gap-3 px-4 py-2.5 rounded-md hover:bg-vibe-onyx-300/50 transition-colors group mx-1 mb-1"
+      >
+        <div className="h-7 w-7 rounded-sm bg-gradient-to-br from-vibe-purple to-vibe-red flex items-center justify-center shrink-0">
+          <Heart className="h-3.5 w-3.5 text-white fill-white" />
+        </div>
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-vibe-text-secondary group-hover:text-white transition-colors truncate">
+            Liked music
+          </p>
+          <p className="text-[10px] text-vibe-text-muted">Auto playlist</p>
+        </div>
+      </Link>
+
+      {/* User playlists — live from Redux */}
+      <div className="flex flex-col gap-0.5 flex-1 overflow-y-auto scrollbar-vibe">
+        {playlists.map((pl) => (
+          <Link
             key={pl.id}
+            to={`/listen/library`}
             onClick={onClose}
-            className="flex flex-col px-4 py-2 rounded-md hover:bg-vibe-onyx-300/50 transition-colors text-left"
+            className="flex items-center gap-3 px-4 py-2 rounded-md hover:bg-vibe-onyx-300/50 transition-colors group mx-1"
           >
-            <span className="text-sm font-medium text-vibe-text-secondary">{pl.label}</span>
-            <span className="text-xs text-vibe-text-muted mt-0.5">{pl.sub}</span>
-          </button>
+            <div className="h-7 w-7 rounded-sm bg-vibe-onyx-400 shrink-0 overflow-hidden flex items-center justify-center">
+              {pl.coverUrl ? (
+                <img src={pl.coverUrl} alt={pl.name} className="w-full h-full object-cover" />
+              ) : (
+                <Music2 className="h-3.5 w-3.5 text-vibe-text-muted" />
+              )}
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-vibe-text-secondary group-hover:text-white transition-colors truncate">
+                {pl.name}
+              </p>
+              <p className="text-[10px] text-vibe-text-muted">{pl.tracks.length} tracks</p>
+            </div>
+          </Link>
         ))}
       </div>
 
-      {/* Account section */}
-      <div className="mt-auto">
+      {/* Account */}
+      <div className="mt-4 pt-4 border-t border-vibe-onyx-400">
         <p className="px-4 mb-2 text-xs font-medium text-vibe-text-muted uppercase tracking-wider">Account</p>
         <div className="flex flex-col gap-1">
           <Link to="/listen/profile" onClick={onClose}
@@ -101,14 +136,15 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
 
 // ── Layout ────────────────────────────────────────────────
 export function UserLayout() {
-  const [mobileOpen, setMobileOpen] = useState(false)
+  const [mobileOpen, setMobileOpen]         = useState(false)
+  const [createPlaylistOpen, setCreatePlaylistOpen] = useState(false)
   const { user } = useAppSelector((s) => s.auth)
 
   return (
     <div className="flex h-screen overflow-hidden bg-vibe-onyx">
       {/* Desktop sidebar */}
       <aside className="hidden md:flex flex-col w-56 shrink-0 border-r border-vibe-onyx-400 bg-vibe-onyx-100 h-screen overflow-y-auto">
-        <SidebarContent />
+        <SidebarContent onNewPlaylist={() => setCreatePlaylistOpen(true)} />
       </aside>
 
       {/* Mobile drawer */}
@@ -126,7 +162,10 @@ export function UserLayout() {
               exit={{ x: "-100%", transition: { duration: 0.2 } }}
               className="fixed inset-y-0 left-0 z-50 w-64 bg-vibe-onyx-100 md:hidden"
             >
-              <SidebarContent onClose={() => setMobileOpen(false)} />
+              <SidebarContent
+                onClose={() => setMobileOpen(false)}
+                onNewPlaylist={() => { setMobileOpen(false); setCreatePlaylistOpen(true) }}
+              />
             </motion.aside>
           </>
         )}
@@ -141,7 +180,6 @@ export function UserLayout() {
             <Menu className="h-6 w-6" />
           </button>
 
-          {/* Search */}
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-vibe-text-muted" />
             <input type="text" placeholder="Search"
@@ -150,17 +188,11 @@ export function UserLayout() {
           </div>
 
           <div className="flex items-center gap-3 ml-auto">
-            {/* Avatar */}
             <div className="h-8 w-8 rounded-full bg-vibe-onyx-300 border border-vibe-onyx-400 flex items-center justify-center text-xs font-heading font-semibold text-white shrink-0">
               {user?.displayName?.slice(0, 2).toUpperCase() ?? "VG"}
             </div>
-
-            {/* VCoins balance */}
             <div className="flex items-center gap-1.5 px-3 h-8 rounded-full bg-vibe-onyx-300 border border-vibe-onyx-400 text-sm font-medium text-white">
-              {/* Lightning bolt icon */}
-              <svg width="12" height="14" viewBox="0 0 12 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M7 1L1 8h5l-1 5 6-7H6l1-5z" fill="#F4A435" />
-              </svg>
+              <svg width="12" height="14" viewBox="0 0 12 14" fill="none"><path d="M7 1L1 8h5l-1 5 6-7H6l1-5z" fill="#F4A435" /></svg>
               <span>12,678 Vcoins</span>
             </div>
           </div>
@@ -172,10 +204,19 @@ export function UserLayout() {
         </main>
       </div>
 
-      {/* Player bar — inset from left to not overlap sidebar */}
+      {/* Queue panel — slides in over the player */}
+      <QueuePanel />
+
+      {/* Player bar */}
       <div className="fixed bottom-0 left-0 md:left-56 right-0 z-30">
         <PlayerBar />
       </div>
+
+      {/* Create playlist dialog */}
+      <CreatePlaylistDialog
+        open={createPlaylistOpen}
+        onClose={() => setCreatePlaylistOpen(false)}
+      />
     </div>
   )
 }

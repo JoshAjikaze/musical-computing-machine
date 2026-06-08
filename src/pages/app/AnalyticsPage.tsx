@@ -25,7 +25,7 @@ export function AnalyticsPage() {
   const totalfollowers = DashboardFetching ? "0M" : formatNumber(DashboardData?.stats?.total_followers as number);
   const totalTracks = StatsFetching ? "0" : formatNumber(StatsData?.total_tracks as number);
   const totalStreams = StatsFetching ? "0M" : formatPlays(StatsData?.total_plays as number);
-  const totalEarnings = formatCurrency(1000000);
+  const totalEarnings = formatCurrency(0);
 
   const STATS = [
     { label: "Total Streams", value: `${totalStreams}`, change: 16, icon: <TrendingUp className="h-5 w-5 text-purple-400" /> },

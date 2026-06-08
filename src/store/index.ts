@@ -5,11 +5,12 @@ import { vibeApi } from './api/vibeApi'
 import playerReducer from './slices/playerSlice'
 import authReducer from './slices/authSlice'
 import uiReducer from './slices/uiSlice'
+import playlistReducer from './slices/playlistSlice'
 
 const persistConfig = {
   key: 'root',
   storage,
-  whitelist: ['auth', 'player', 'ui'], // Exclude vibeApi from being persisted
+  whitelist: ['auth', 'player', 'ui', 'playlists'],
 }
 
 const rootReducer = combineReducers({
@@ -17,6 +18,7 @@ const rootReducer = combineReducers({
   player: playerReducer,
   auth: authReducer,
   ui: uiReducer,
+  playlists: playlistReducer,
 })
 
 const persistedReducer = persistReducer(persistConfig, rootReducer)

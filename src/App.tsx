@@ -28,6 +28,7 @@ import { MonetizationPage } from "./pages/admin/MonetizationPage"
 import { ReportsAnalyticsPage } from "./pages/admin/ReportsAnalyticsPage"
 import { ContentModerationPage } from "./pages/admin/ContentModerationPage"
 import { Toaster } from "./components/ui/sonner"
+import { AudioEngine } from "./components/app/AudioEngine"
 import { ProtectedRoute } from "./components/auth/ProtectedRoute"
 
 const AUTH_ROUTES = ["/login", "/join", "/verify", "/forgot-password"]
@@ -53,6 +54,7 @@ function App() {
         <PersistGate loading={null} persistor={persistor}>
           <HashRouter>
             <Layout />
+            <AudioEngine />
             <Toaster />
             <Routes>
               {/* Public */}

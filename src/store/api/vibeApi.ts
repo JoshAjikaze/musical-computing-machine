@@ -24,6 +24,7 @@ import {
 } from '@reduxjs/toolkit/query/react'
 import type { RootState } from '../index'
 import { logout } from '../slices/authSlice'
+import { assetUrl } from '@/lib/utils'
 
 // ─────────────────────────────────────────────────────────
 // Schema types matching the spec exactly
@@ -117,6 +118,20 @@ export interface ArtistPaymentSettingsResponse extends ArtistPaymentSettingsCrea
 }
 
 
+export interface NEW_RELEASES {
+  id: string
+  cover_path: string
+  likes: number
+  album_id: any
+  price: number
+  title: string
+  audio_path: string
+  plays: number
+  artist_id: string
+  is_for_sale: boolean
+}
+
+
 // Track type — used by playerSlice and listener pages
 export interface Track {
   id: string
@@ -161,6 +176,48 @@ export function normaliseUser(u: UserResponse): User {
     role,
     is_verified_artist: u.is_verified_artist,
     createdAt: new Date().toISOString(),
+  }
+}
+
+
+/**
+ * Map a TrackOut (artist-owned track from the backend) → Track (player-ready shape).
+ * Applies assetUrl() to audio_path and cover_path so every consumer gets a full URL.
+ */
+export function normaliseTrack(t: TrackOut, artistName = ""): Track {
+  return {
+    id: t.id,
+    title: t.title,
+    artist: artistName,
+    artistId: "",
+    duration: 0,
+    audioUrl: assetUrl(t.audio_path),
+    coverUrl: assetUrl(t.cover_path),
+    genre: "",
+    playCount: t.plays,
+    likeCount: t.likes,
+    releaseDate: "",
+    isPremium: t.is_for_sale,
+  }
+}
+
+/**
+ * Map a NEW_RELEASES item → Track (player-ready shape).
+ */
+export function normaliseNewRelease(t: NEW_RELEASES, artistName = ""): Track {
+  return {
+    id: t.id,
+    title: t.title,
+    artist: artistName,
+    artistId: t.artist_id,
+    duration: 0,
+    audioUrl: assetUrl(t.audio_path),
+    coverUrl: assetUrl(t.cover_path),
+    genre: "",
+    playCount: t.plays,
+    likeCount: t.likes,
+    releaseDate: "",
+    isPremium: t.is_for_sale,
   }
 }
 
@@ -362,7 +419,7 @@ export const vibeApi = createApi({
     // ── Discovery & Trending ──────────────────────────────────────
     getLandingPageData: b.query<unknown, { limit?: number }>({ query: ({ limit = 10 }) => `/trending/landing-page?limit=${limit}` }),
     getDiscoveryTrending: b.query<unknown, { limit?: number }>({ query: ({ limit = 10 }) => `/discovery/trending?limit=${limit}`, providesTags: ['Track'] }),
-    getNewReleases: b.query<unknown, { limit?: number }>({ query: ({ limit = 10 }) => `/discovery/new-releases?limit=${limit}`, providesTags: ['Track'] }),
+    getNewReleases: b.query<[NEW_RELEASES], { limit?: number }>({ query: ({ limit = 10 }) => `/discovery/new-releases?limit=${limit}`, providesTags: ['Track'] }),
     getGarageFeed: b.query<unknown, { limit?: number }>({ query: ({ limit = 20 }) => `/discovery/feed?limit=${limit}` }),
     getDailyMix: b.query<unknown, void>({ query: () => '/daily-mix/' }),
 
