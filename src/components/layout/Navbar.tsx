@@ -8,6 +8,7 @@ import { useAppDispatch, useAppSelector } from "@/hooks/redux"
 import { toggleMobileMenu, closeMobileMenu } from "@/store/slices/uiSlice"
 import { logout } from "@/store/slices/authSlice"
 import { cn } from "@/lib/utils"
+import { AvatarDropdown } from "@/components/app/AvatarDropdown"
 
 const NAV_LINKS = [
   { label: "Discover", href: "/discover" },
@@ -31,9 +32,6 @@ export function Navbar() {
   }, [])
 
   useEffect(() => { dispatch(closeMobileMenu()) }, [location.pathname, dispatch])
-
-  const initials = user?.displayName
-    ?.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
 
   return (
     <>
@@ -72,10 +70,7 @@ export function Navbar() {
             </button>
             {isAuthenticated && user ? (
               <div className="flex items-center gap-3">
-                <div className="h-8 w-8 rounded-full bg-vibe-onyx-300 border border-vibe-onyx-400 hover:border-vibe-red flex items-center justify-center text-xs font-heading font-semibold text-vibe-text-primary cursor-pointer transition-all">
-                  {initials}
-                </div>
-                <Button variant="ghost" size="sm" onClick={() => dispatch(logout())}>Sign Out</Button>
+                <AvatarDropdown profileHref="/listen/profile" logoutRedirect="/login" />
               </div>
             ) : (
               <>

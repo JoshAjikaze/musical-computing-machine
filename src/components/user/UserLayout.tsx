@@ -7,6 +7,7 @@ import { PlayerBar } from "@/components/app/PlayerBar"
 import { QueuePanel } from "@/components/app/QueuePanel"
 import { CreatePlaylistDialog } from "@/components/app/CreatePlaylistDialog"
 import { useAppSelector } from "@/hooks/redux"
+import { AvatarDropdown } from "@/components/app/AvatarDropdown"
 import { cn } from "@/lib/utils"
 
 const NAV_LINKS = [
@@ -138,7 +139,6 @@ function SidebarContent({
 export function UserLayout() {
   const [mobileOpen, setMobileOpen]         = useState(false)
   const [createPlaylistOpen, setCreatePlaylistOpen] = useState(false)
-  const { user } = useAppSelector((s) => s.auth)
 
   return (
     <div className="flex h-screen overflow-hidden bg-vibe-onyx">
@@ -188,9 +188,7 @@ export function UserLayout() {
           </div>
 
           <div className="flex items-center gap-3 ml-auto">
-            <div className="h-8 w-8 rounded-full bg-vibe-onyx-300 border border-vibe-onyx-400 flex items-center justify-center text-xs font-heading font-semibold text-white shrink-0">
-              {user?.displayName?.slice(0, 2).toUpperCase() ?? "VG"}
-            </div>
+            <AvatarDropdown profileHref="/listen/profile" logoutRedirect="/login" />
             <div className="flex items-center gap-1.5 px-3 h-8 rounded-full bg-vibe-onyx-300 border border-vibe-onyx-400 text-sm font-medium text-white">
               <svg width="12" height="14" viewBox="0 0 12 14" fill="none"><path d="M7 1L1 8h5l-1 5 6-7H6l1-5z" fill="#F4A435" /></svg>
               <span>12,678 Vcoins</span>
