@@ -491,7 +491,7 @@ function Album3Form({
       <form onSubmit={handleSubmit} className="flex flex-col gap-5 flex-1">
         <div className="space-y-2">
           <p className="text-sm font-medium text-vibe-text-secondary">Upload track</p>
-          <FileDropzone accept=".mp3,.mwv,.wav" hint="MP3, MWV or WAV - Max file size 5MB" maxSizeMB={5}
+          <FileDropzone accept=".mp3,.mwv,.wav" hint="MP3, WAV or M4A – Max file size 10MB" maxSizeMB={10}
             value={audioFile} onChange={handleAudioChange} type="audio" />
         </div>
         <div className="space-y-2">
@@ -659,8 +659,8 @@ function Single2Form({
         <p className="text-sm font-medium text-vibe-text-secondary">Upload Track</p>
         <FileDropzone
           accept=".mp3,.wav,.m4a"
-          hint="MP3, WAV or M4A – Max file size 5MB"
-          maxSizeMB={5}
+          hint="MP3, WAV or M4A – Max file size 10MB"
+          maxSizeMB={10}
           value={audioFile}
           onChange={(f) => { setAudioFile(f); if (f) setAudioError("") }}
           type="audio"

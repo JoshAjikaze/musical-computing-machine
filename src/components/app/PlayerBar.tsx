@@ -1,4 +1,5 @@
 import { useRef, useState } from "react"
+import { useNavigate } from "react-router-dom"
 import {
   SkipBack, Play, Pause, SkipForward,
   Heart, Volume2, VolumeX,
@@ -20,7 +21,8 @@ function formatTime(s: number) {
 }
 
 export function PlayerBar() {
-  const dispatch = useAppDispatch()
+  const dispatch  = useAppDispatch()
+  const navigate   = useNavigate()
   const { currentTrack, isPlaying, volume, isMuted, progress, duration, repeatMode, isShuffle } =
     useAppSelector((s) => s.player)
 
@@ -104,17 +106,28 @@ export function PlayerBar() {
       {/* Controls row */}
       <div className="flex items-center gap-3 px-4 h-[60px]">
 
-        {/* Track info */}
-        <div className="flex items-center gap-3 w-[220px] md:w-[260px] min-w-0">
+        {/* Track info — click to open Now Playing */}
+        <button
+          onClick={() => currentTrack && navigate("/listen/now-playing")}
+          className={cn(
+            "flex items-center gap-3 w-[220px] md:w-[260px] min-w-0 text-left group/info",
+            currentTrack ? "cursor-pointer" : "cursor-default"
+          )}
+        >
           {currentTrack ? (
             <>
-              <img
-                src={currentTrack.coverUrl}
-                alt={currentTrack.title}
-                className="h-9 w-9 rounded-sm object-cover shrink-0"
-              />
+              <div className="relative shrink-0">
+                <img
+                  src={currentTrack.coverUrl}
+                  alt={currentTrack.title}
+                  className="h-9 w-9 rounded-sm object-cover"
+                />
+                <div className="absolute inset-0 rounded-sm bg-black/40 flex items-center justify-center opacity-0 group-hover/info:opacity-100 transition-opacity">
+                  <ChevronUp className="h-3.5 w-3.5 text-white" />
+                </div>
+              </div>
               <div className="min-w-0">
-                <p className="text-sm font-medium text-white truncate leading-tight">
+                <p className="text-sm font-medium text-white truncate leading-tight group-hover/info:text-white/80 transition-colors">
                   {currentTrack.title}
                 </p>
                 <p className="text-xs text-vibe-text-muted truncate">{currentTrack.artist}</p>
@@ -126,7 +139,7 @@ export function PlayerBar() {
               <p className="text-sm text-vibe-text-muted">No track playing</p>
             </div>
           )}
-        </div>
+        </button>
 
         {/* Centre controls */}
         <div className="flex items-center justify-center gap-3 flex-1">
@@ -228,7 +241,10 @@ export function PlayerBar() {
             <ListMusic className="h-4 w-4" />
           </button>
 
-          <button className="text-vibe-text-muted hover:text-white transition-colors md:hidden">
+          <button
+            onClick={() => currentTrack && navigate("/listen/now-playing")}
+            className="text-vibe-text-muted hover:text-white transition-colors md:hidden"
+          >
             <ChevronUp className="h-4 w-4" />
           </button>
         </div>

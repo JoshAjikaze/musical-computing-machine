@@ -20,6 +20,7 @@ import { UserLayout } from "./components/user/UserLayout"
 import { UserHomePage } from "./pages/user/UserHomePage"
 import { UserExplorePage } from "./pages/user/UserExplorePage"
 import { UserLibraryPage } from "./pages/user/UserLibraryPage"
+import { NowPlayingPage } from "./pages/user/NowPlayingPage"
 import { AdminLayout } from "./components/admin/AdminLayout"
 import { AdminDashboard } from "./pages/admin/AdminDashboard"
 import { UserManagementPage } from "./pages/admin/UserManagementPage"
@@ -90,6 +91,7 @@ function App() {
               <Route path="explore" element={<Page><UserExplorePage /></Page>} />
               <Route path="library" element={<Page><UserLibraryPage /></Page>} />
               <Route path="profile" element={<Page><ProfilePage /></Page>} />
+              <Route path="now-playing" element={<Page><NowPlayingPage /></Page>} />
               <Route path="support" element={<Page><SupportPage /></Page>} />
             </Route>
 
