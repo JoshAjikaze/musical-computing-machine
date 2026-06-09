@@ -411,10 +411,45 @@ export const vibeApi = createApi({
     getListeningHistory: b.query<unknown, void>({ query: () => '/listener/history' }),
 
     // ── Playlists ─────────────────────────────────────────────────
-    createPlaylist: b.mutation<unknown, { name: string }>({ query: ({ name }) => ({ url: `/playlists/?name=${encodeURIComponent(name)}`, method: 'POST' }), invalidatesTags: ['Playlist'] }),
-    getMyPlaylists: b.query<unknown, void>({ query: () => '/playlists/me', providesTags: ['Playlist'] }),
-    getPlaylistDetails: b.query<unknown, string>({ query: (id) => `/playlists/${id}`, providesTags: (_r, _e, id) => [{ type: 'Playlist', id }] }),
-    uploadPlaylistCover: b.mutation<unknown, { playlist_id: string; file: FormData }>({ query: ({ playlist_id, file }) => ({ url: `/playlists/${playlist_id}/upload-cover`, method: 'POST', body: file }) }),
+    // POST /playlists/create  { name: string }
+    createPlaylist: b.mutation<unknown, { name: string }>({
+      query: ({ name }) => ({ url: '/playlists/create', method: 'POST', body: { name } }),
+      invalidatesTags: ['Playlist'],
+    }),
+    // GET /playlists/me
+    getMyPlaylists: b.query<unknown, void>({
+      query: () => '/playlists/me',
+      providesTags: ['Playlist'],
+    }),
+    // GET /playlists/{playlist_id}
+    getPlaylistDetails: b.query<unknown, string>({
+      query: (playlist_id) => `/playlists/${playlist_id}`,
+      providesTags: (_r, _e, id) => [{ type: 'Playlist', id }],
+    }),
+    // POST /playlists/{playlist_id}/add/{track_id}
+    addTrackToPlaylistApi: b.mutation<unknown, { playlist_id: string; track_id: string }>({
+      query: ({ playlist_id, track_id }) => ({
+        url: `/playlists/${playlist_id}/add/${track_id}`,
+        method: 'POST',
+      }),
+      invalidatesTags: (_r, _e, { playlist_id }) => [{ type: 'Playlist', id: playlist_id }],
+    }),
+    // DELETE /playlists/{playlist_id}/remove/{track_id}
+    removeTrackFromPlaylistApi: b.mutation<unknown, { playlist_id: string; track_id: string }>({
+      query: ({ playlist_id, track_id }) => ({
+        url: `/playlists/${playlist_id}/remove/${track_id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: (_r, _e, { playlist_id }) => [{ type: 'Playlist', id: playlist_id }],
+    }),
+    // POST /playlists/{playlist_id}/upload-cover  (multipart/form-data, field: file)
+    uploadPlaylistCover: b.mutation<unknown, { playlist_id: string; file: FormData }>({
+      query: ({ playlist_id, file }) => ({
+        url: `/playlists/${playlist_id}/upload-cover`,
+        method: 'POST',
+        body: file,
+      }),
+    }),
 
     // ── Discovery & Trending ──────────────────────────────────────
     getLandingPageData: b.query<unknown, { limit?: number }>({ query: ({ limit = 10 }) => `/trending/landing-page?limit=${limit}` }),
@@ -497,6 +532,7 @@ export const {
   useGetFollowingArtistsQuery, useGetRecentlyPlayedQuery, useGetListeningHistoryQuery,
   useCreatePlaylistMutation, useGetMyPlaylistsQuery,
   useGetPlaylistDetailsQuery, useUploadPlaylistCoverMutation,
+  useAddTrackToPlaylistApiMutation, useRemoveTrackFromPlaylistApiMutation,
   useGetLandingPageDataQuery, useGetDiscoveryTrendingQuery,
   useGetNewReleasesQuery, useGetGarageFeedQuery, useGetDailyMixQuery,
   useGetPersonalizedFeedQuery, useGlobalSearchQuery, useGetRisingStarsQuery,

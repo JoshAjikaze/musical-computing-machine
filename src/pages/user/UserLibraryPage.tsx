@@ -1,13 +1,15 @@
 import { useState } from "react"
-import { Play, MoreHorizontal, Plus, Trash2, Music2, ArrowLeft } from "lucide-react"
+import { Play, MoreHorizontal, Plus, Trash2, Music2, ArrowLeft, X } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { useAppDispatch, useAppSelector } from "@/hooks/redux"
-import { deletePlaylist, setActivePlaylist } from "@/store/slices/playlistSlice"
+import { deletePlaylist, setActivePlaylist, removeTrackFromPlaylist } from "@/store/slices/playlistSlice"
 import { playTrack } from "@/store/slices/playerSlice"
+import { useRemoveTrackFromPlaylistApiMutation } from "@/store/api/vibeApi"
 import { CreatePlaylistDialog } from "@/components/app/CreatePlaylistDialog"
 import { cn } from "@/lib/utils"
 import type { Playlist } from "@/store/slices/playlistSlice"
+import { toast } from "sonner"
 
 const FILTER_TABS = ["Playlists", "Artists", "Albums", "Downloads"] as const
 type FilterTab = typeof FILTER_TABS[number]
@@ -195,10 +197,20 @@ function PlaylistsGrid({
 // ── Playlist detail view ──────────────────────────────────
 function PlaylistDetail({ playlist, onBack }: { playlist: Playlist; onBack: () => void }) {
   const dispatch = useAppDispatch()
+  const [removeTrackApi] = useRemoveTrackFromPlaylistApiMutation()
 
   function playAll() {
     if (!playlist.tracks.length) return
     dispatch(playTrack({ track: playlist.tracks[0], queue: playlist.tracks }))
+  }
+
+  function handleRemoveTrack(trackId: string, trackTitle: string) {
+    // Optimistic local update
+    dispatch(removeTrackFromPlaylist({ playlistId: playlist.id, trackId }))
+    // Hit API
+    removeTrackApi({ playlist_id: playlist.id, track_id: trackId })
+      .unwrap()
+      .catch(() => toast.error(`Couldn't remove "${trackTitle}"`))
   }
 
   return (
@@ -250,30 +262,42 @@ function PlaylistDetail({ playlist, onBack }: { playlist: Playlist; onBack: () =
       ) : (
         <div className="space-y-0.5">
           {playlist.tracks.map((track, idx) => (
-            <button
+            <div
               key={track.id}
-              onClick={() => dispatch(playTrack({ track, queue: playlist.tracks }))}
-              className="flex items-center gap-4 w-full px-3 py-2.5 rounded-md hover:bg-vibe-onyx-300 transition-colors group text-left"
+              className="flex items-center gap-4 w-full px-3 py-2.5 rounded-md hover:bg-vibe-onyx-300 transition-colors group/row"
             >
               <span className="text-xs text-vibe-text-muted w-5 text-center shrink-0 tabular-nums">
                 {idx + 1}
               </span>
-              <div className="h-9 w-9 rounded-sm bg-vibe-onyx-400 shrink-0 overflow-hidden">
-                {track.coverUrl
-                  ? <img src={track.coverUrl} alt={track.title} className="w-full h-full object-cover" />
-                  : <div className="w-full h-full flex items-center justify-center"><Music2 className="h-4 w-4 text-vibe-text-muted" /></div>
-                }
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-white truncate">{track.title}</p>
-                <p className="text-xs text-vibe-text-muted truncate">{track.artist}</p>
-              </div>
+              <button
+                onClick={() => dispatch(playTrack({ track, queue: playlist.tracks }))}
+                className="flex items-center gap-3 flex-1 min-w-0 text-left"
+              >
+                <div className="h-9 w-9 rounded-sm bg-vibe-onyx-400 shrink-0 overflow-hidden">
+                  {track.coverUrl
+                    ? <img src={track.coverUrl} alt={track.title} className="w-full h-full object-cover" />
+                    : <div className="w-full h-full flex items-center justify-center"><Music2 className="h-4 w-4 text-vibe-text-muted" /></div>
+                  }
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-white truncate">{track.title}</p>
+                  <p className="text-xs text-vibe-text-muted truncate">{track.artist}</p>
+                </div>
+              </button>
               {track.duration > 0 && (
                 <span className="text-xs text-vibe-text-muted tabular-nums shrink-0">
                   {Math.floor(track.duration / 60)}:{Math.floor(track.duration % 60).toString().padStart(2, "0")}
                 </span>
               )}
-            </button>
+              {/* Remove button — appears on row hover */}
+              <button
+                onClick={() => handleRemoveTrack(track.id, track.title)}
+                className="opacity-0 group-hover/row:opacity-100 transition-opacity text-vibe-text-muted hover:text-vibe-red shrink-0"
+                aria-label={`Remove ${track.title}`}
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
           ))}
         </div>
       )}

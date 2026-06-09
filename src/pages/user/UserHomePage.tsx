@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { useAppDispatch, useAppSelector } from "@/hooks/redux"
 import { playTrack, addToQueue } from "@/store/slices/playerSlice"
 import { addTrackToPlaylist } from "@/store/slices/playlistSlice"
-import { type NEW_RELEASES, vibeApi, type Track, normaliseNewRelease } from "@/store/api/vibeApi"
+import { type NEW_RELEASES, vibeApi, type Track, normaliseNewRelease, useAddTrackToPlaylistApiMutation } from "@/store/api/vibeApi"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 
@@ -163,6 +163,8 @@ function TrendingCard({ track, onPlay }: { track: Track; onPlay: () => void }) {
   const [liked, setLiked]         = useState(false)
   const menuRef                   = useRef<HTMLDivElement>(null)
 
+  const [addTrackApi] = useAddTrackToPlaylistApiMutation()
+
   // Close on outside click
   useEffect(() => {
     if (!menuOpen) return
@@ -187,8 +189,13 @@ function TrendingCard({ track, onPlay }: { track: Track; onPlay: () => void }) {
         toast.success(`Added to favourites`)
         break
       case "add_to_playlist":
+        // Optimistic local update immediately
         dispatch(addTrackToPlaylist({ playlistId: action.playlistId, track }))
-        toast.success(`Added to "${action.playlistName}"`)
+        // Fire API in background — revert toast if it fails
+        addTrackApi({ playlist_id: action.playlistId, track_id: track.id })
+          .unwrap()
+          .then(() => toast.success(`Added to "${action.playlistName}"`))
+          .catch(() => toast.error(`Couldn't add to "${action.playlistName}"`))
         break
       case "share":
         navigator.clipboard?.writeText(track.title).catch(() => {})
