@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useAppDispatch } from "@/hooks/redux"
-import { setPendingEmail } from "@/store/slices/authSlice"
+import { setPendingEmail, setPendingCredentials } from "@/store/slices/authSlice"
 import { useRegisterMutation } from "@/store/api/vibeApi"
 import { cn } from "@/lib/utils"
 
@@ -336,8 +336,10 @@ function Step3({ wizard }: { wizard: WizardState }) {
         dob:        formatDob(wizard.dob),
         role:       ROLE_MAP[values.role.toLowerCase()] ?? 'LISTENER',
       }).unwrap()
-      // Signup returns UserResponse (no token). Store email for verify page.
+      // Store email for the verify page header
       dispatch(setPendingEmail(wizard.email))
+      // Cache credentials for auto-login after verification — cleared on use
+      dispatch(setPendingCredentials({ email: wizard.email, password: values.password }))
       navigate('/verify')
     } catch {
       form.setError('role', { message: 'Registration failed. Please try again.' })

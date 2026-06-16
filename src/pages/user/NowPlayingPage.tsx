@@ -13,7 +13,7 @@ import {
 } from "@/store/slices/playerSlice"
 import { seekAudio } from "@/components/app/AudioEngine"
 import { cn } from "@/lib/utils"
-import { useRef, useState } from "react"
+import { useRef, useState, useEffect, useCallback } from "react"
 
 function formatTime(s: number) {
   if (!isFinite(s) || isNaN(s)) return "0:00"
@@ -33,6 +33,12 @@ export function NowPlayingPage() {
   const [seekValue, setSeekValue] = useState(0)
   const progressBarRef            = useRef<HTMLDivElement>(null)
 
+  const isSeekingRef = useRef(false)
+  const durationRef  = useRef(duration)
+  const hasTrackRef  = useRef(!!currentTrack)
+  useEffect(() => { durationRef.current = duration },     [duration])
+  useEffect(() => { hasTrackRef.current = !!currentTrack }, [currentTrack])
+
   const progressPct = duration > 0
     ? ((isSeeking ? seekValue : progress) / duration) * 100
     : 0
@@ -42,27 +48,68 @@ export function NowPlayingPage() {
   const RepeatIcon      = repeatMode === "one" ? Repeat1 : Repeat
   const repeatActive    = repeatMode !== "off"
 
-  function getTimeFromEvent(e: React.MouseEvent | React.TouchEvent) {
+  function clientXToTime(clientX: number): number {
     const bar = progressBarRef.current
-    if (!bar || !duration) return 0
-    const rect    = bar.getBoundingClientRect()
-    const clientX = "touches" in e ? e.touches[0].clientX : e.clientX
-    return Math.min(1, Math.max(0, (clientX - rect.left) / rect.width)) * duration
+    if (!bar || !durationRef.current) return 0
+    const rect  = bar.getBoundingClientRect()
+    return Math.min(1, Math.max(0, (clientX - rect.left) / rect.width)) * durationRef.current
   }
 
-  function handleSeekStart(e: React.MouseEvent | React.TouchEvent) {
+  // Mouse (desktop)
+  function handleMouseDown(e: React.MouseEvent) {
     if (!currentTrack) return
-    setIsSeeking(true); setSeekValue(getTimeFromEvent(e))
+    isSeekingRef.current = true
+    setIsSeeking(true)
+    setSeekValue(clientXToTime(e.clientX))
   }
-  function handleSeekMove(e: React.MouseEvent | React.TouchEvent) {
-    if (!isSeeking) return
-    setSeekValue(getTimeFromEvent(e))
+  function handleMouseMove(e: React.MouseEvent) {
+    if (!isSeekingRef.current) return
+    setSeekValue(clientXToTime(e.clientX))
   }
-  function handleSeekEnd(e: React.MouseEvent | React.TouchEvent) {
-    if (!isSeeking) return
-    const t = getTimeFromEvent(e)
-    seekAudio(t); dispatch(setProgress(t)); setIsSeeking(false)
+  function handleMouseUp(e: React.MouseEvent) {
+    if (!isSeekingRef.current) return
+    const t = clientXToTime(e.clientX)
+    seekAudio(t); dispatch(setProgress(t))
+    isSeekingRef.current = false; setIsSeeking(false)
   }
+
+  // Touch (mobile) — non-passive so preventDefault works
+  const handleTouchStart = useCallback((e: TouchEvent) => {
+    if (!hasTrackRef.current) return
+    e.preventDefault()
+    isSeekingRef.current = true
+    setIsSeeking(true)
+    setSeekValue(clientXToTime(e.touches[0].clientX))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const handleTouchMove = useCallback((e: TouchEvent) => {
+    if (!isSeekingRef.current) return
+    e.preventDefault()
+    setSeekValue(clientXToTime(e.touches[0].clientX))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const handleTouchEnd = useCallback((e: TouchEvent) => {
+    if (!isSeekingRef.current) return
+    const t = clientXToTime(e.changedTouches[0].clientX)
+    seekAudio(t); dispatch(setProgress(t))
+    isSeekingRef.current = false; setIsSeeking(false)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dispatch])
+
+  useEffect(() => {
+    const el = progressBarRef.current
+    if (!el) return
+    el.addEventListener("touchstart", handleTouchStart, { passive: false })
+    el.addEventListener("touchmove",  handleTouchMove,  { passive: false })
+    el.addEventListener("touchend",   handleTouchEnd,   { passive: false })
+    return () => {
+      el.removeEventListener("touchstart", handleTouchStart)
+      el.removeEventListener("touchmove",  handleTouchMove)
+      el.removeEventListener("touchend",   handleTouchEnd)
+    }
+  }, [handleTouchStart, handleTouchMove, handleTouchEnd])
 
   return (
     <motion.div
@@ -167,20 +214,20 @@ export function NowPlayingPage() {
         </div>
 
         {/* Progress bar */}
-        <div className="mb-2">
+        <div
+          className="mb-2"
+          onMouseUp={handleMouseUp}
+          onMouseLeave={(e) => { if (isSeekingRef.current) handleMouseUp(e) }}
+        >
           <div
             ref={progressBarRef}
             className={cn(
               "h-1 bg-white/15 rounded-full relative group",
               currentTrack ? "cursor-pointer" : "cursor-default"
             )}
-            onMouseDown={handleSeekStart}
-            onMouseMove={handleSeekMove}
-            onMouseUp={handleSeekEnd}
-            onMouseLeave={(e) => { if (isSeeking) handleSeekEnd(e) }}
-            onTouchStart={handleSeekStart}
-            onTouchMove={handleSeekMove}
-            onTouchEnd={handleSeekEnd}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            // touch handlers attached imperatively above
           >
             <div
               className="h-full bg-white rounded-full transition-none"
