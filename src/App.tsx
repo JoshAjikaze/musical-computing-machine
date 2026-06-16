@@ -21,6 +21,7 @@ import { UserHomePage } from "./pages/user/UserHomePage"
 import { UserExplorePage } from "./pages/user/UserExplorePage"
 import { UserLibraryPage } from "./pages/user/UserLibraryPage"
 import { NowPlayingPage } from "./pages/user/NowPlayingPage"
+import { ArtistProfilePage } from "./pages/user/ArtistProfilePage"
 import { AdminLayout } from "./components/admin/AdminLayout"
 import { AdminDashboard } from "./pages/admin/AdminDashboard"
 import { UserManagementPage } from "./pages/admin/UserManagementPage"
@@ -78,6 +79,7 @@ function App() {
               <Route path="earnings"  element={<Page><EarningsPage /></Page>} />
               <Route path="explore"   element={<Page><ExplorePage /></Page>} />
               <Route path="profile"   element={<Page><ProfilePage /></Page>} />
+              <Route path="artist/:id" element={<Page><ArtistProfilePage /></Page>} />
               <Route path="support"   element={<Page><SupportPage /></Page>} />
             </Route>
 
@@ -92,6 +94,7 @@ function App() {
               <Route path="library" element={<Page><UserLibraryPage /></Page>} />
               <Route path="profile" element={<Page><ProfilePage /></Page>} />
               <Route path="now-playing" element={<Page><NowPlayingPage /></Page>} />
+              <Route path="artist/:id"  element={<Page><ArtistProfilePage /></Page>} />
               <Route path="support" element={<Page><SupportPage /></Page>} />
             </Route>
 

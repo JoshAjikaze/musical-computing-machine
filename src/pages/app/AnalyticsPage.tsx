@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { StatCard } from "@/components/app/StatCard"
 import { UploadPanel } from "@/components/app/UploadPanel"
 import { useAppSelector } from "@/hooks/redux"
-import { useGetArtistDashboardQuery, useGetArtistStatsQuery } from "@/store/api/vibeApi"
+import { useGetArtistDashboardQuery, useGetArtistStatsQuery, useGetMyTracksQuery, normaliseTrack } from "@/store/api/vibeApi"
 import { formatCurrency, formatNumber, formatPlays } from "@/lib/formatters"
 
 // ── Mock data (matches the designs exactly) ───────────────
@@ -35,14 +35,11 @@ export function AnalyticsPage() {
     { label: "Earnings", value: `${totalEarnings}`, change: 2, icon: <Wallet className="h-5 w-5 text-green-400" /> },
   ]
 
-  const TOP_TRACKS = [
-    { rank: 1, title: "Mad over you", plays: "20, 099, 221" },
-    { rank: 2, title: "Revolve", plays: "5, 109, 077" },
-    { rank: 3, title: "Umbrella", plays: "3, 100, 042" },
-    { rank: 4, title: "Living good", plays: "2, 826, 316" },
-    { rank: 5, title: "Super chickens", plays: "1, 049, 829" },
-  ]
-
+  const { data: rawTracks = [], isLoading: tracksLoading } = useGetMyTracksQuery()
+  const topTracks = rawTracks
+    .map((t) => normaliseTrack(t))
+    .sort((a, b) => b.playCount - a.playCount)
+    .slice(0, 5)
 
   return (
     <>
@@ -98,28 +95,47 @@ export function AnalyticsPage() {
               </button>
             </div>
 
-            <div className="space-y-1">
-              {TOP_TRACKS.map((track) => (
-                <div key={track.rank} className="flex items-center gap-3 py-2 group">
-                  <span className="text-sm text-vibe-text-muted w-4 shrink-0">{track.rank}.</span>
-                  {/* Art placeholder */}
-                  <div className="h-8 w-8 rounded-sm bg-vibe-onyx-300 shrink-0 overflow-hidden">
-                    <img
-                      src={`https://picsum.photos/seed/perf${track.rank}/32/32`}
-                      alt={track.title}
-                      className="h-full w-full object-cover"
-                    />
+            {tracksLoading ? (
+              <div className="space-y-3 mt-2">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="flex gap-3 items-center animate-pulse">
+                    <div className="h-8 w-8 rounded-sm bg-vibe-onyx-400 shrink-0" />
+                    <div className="flex-1 space-y-1.5">
+                      <div className="h-3 w-32 rounded bg-vibe-onyx-400" />
+                      <div className="h-2.5 w-20 rounded bg-vibe-onyx-300" />
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-vibe-text-primary truncate">{track.title}</p>
-                    <p className="text-xs text-vibe-text-muted">{track.plays}</p>
+                ))}
+              </div>
+            ) : topTracks.length === 0 ? (
+              <div className="flex flex-col items-center py-10 gap-2 text-vibe-text-muted">
+                <Music className="h-8 w-8 opacity-30" />
+                <p className="text-xs">No tracks uploaded yet</p>
+              </div>
+            ) : (
+              <div className="space-y-1">
+                {topTracks.map((track, i) => (
+                  <div key={track.id} className="flex items-center gap-3 py-2 group">
+                    <span className="text-sm text-vibe-text-muted w-4 shrink-0">{i + 1}.</span>
+                    <div className="h-8 w-8 rounded-sm bg-vibe-onyx-300 shrink-0 overflow-hidden">
+                      {track.coverUrl
+                        ? <img src={track.coverUrl} alt={track.title} className="h-full w-full object-cover" />
+                        : <div className="h-full w-full flex items-center justify-center"><Music className="h-3.5 w-3.5 text-vibe-text-muted" /></div>
+                      }
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-vibe-text-primary truncate">{track.title}</p>
+                      <p className="text-xs text-vibe-text-muted">
+                        {track.playCount > 0 ? track.playCount.toLocaleString() + " plays" : "0 plays"}
+                      </p>
+                    </div>
+                    <button className="text-vibe-text-muted hover:text-white opacity-0 group-hover:opacity-100 transition-all">
+                      <MoreVertical className="h-4 w-4" />
+                    </button>
                   </div>
-                  <button className="text-vibe-text-muted hover:text-white opacity-0 group-hover:opacity-100 transition-all">
-                    <MoreVertical className="h-4 w-4" />
-                  </button>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Advert placeholder */}

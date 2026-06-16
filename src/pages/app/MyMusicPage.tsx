@@ -1,42 +1,39 @@
 import { useState } from "react"
-import { MoreVertical } from "lucide-react"
+import { MoreVertical, Music2, TrendingUp } from "lucide-react"
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { Button } from "@/components/ui/button"
 import { UploadPanel } from "@/components/app/UploadPanel"
+import { useAppDispatch } from "@/hooks/redux"
+import { playTrack } from "@/store/slices/playerSlice"
+import { useGetMyTracksQuery, normaliseTrack } from "@/store/api/vibeApi"
+import { cn } from "@/lib/utils"
 
-// ── Mock data (matches design exactly) ───────────────────
-const MY_ALBUMS = [
-  {
-    id: "a1",
-    title: "XODUS",
-    coverUrl: "https://picsum.photos/seed/xodus/300/300",
-  },
-  {
-    id: "a2",
-    title: "HARVEST",
-    coverUrl: "https://picsum.photos/seed/harvest/300/300",
-  },
-]
-
-// Total slots shown in the grid = 4 visible + scroll
 const ALBUM_SLOT_COUNT = 4
-
-const TOP_SINGLES = [
-  { rank: 1, title: "Miles away",   artist: "Chalee Dip", coverUrl: "https://picsum.photos/seed/s1/40/40" },
-  { rank: 2, title: "Kung Fu",      artist: "Chalee Dip", coverUrl: "https://picsum.photos/seed/s2/40/40" },
-  { rank: 3, title: "Know ya",      artist: "Chalee Dip", coverUrl: "https://picsum.photos/seed/s3/40/40" },
-  { rank: 4, title: "Standard",     artist: "Chalee Dip", coverUrl: "https://picsum.photos/seed/s4/40/40" },
-  { rank: 5, title: "The Stimulus", artist: "Yknade",     coverUrl: "https://picsum.photos/seed/s5/40/40" },
-]
 
 export function MyMusicPage() {
   const [uploadOpen, setUploadOpen] = useState(false)
+  const dispatch = useAppDispatch()
+
+  const { data: rawTracks = [], isLoading } = useGetMyTracksQuery()
+  const tracks = rawTracks.map((t) => normaliseTrack(t))
+
+  // Sort by plays descending for the "Top 5" list
+  const topFive = [...tracks].sort((a, b) => b.playCount - a.playCount).slice(0, 5)
+
+  // Group unique albums (by album title, since some may share)
+  const albumMap = new Map<string, { title: string; coverUrl: string }>()
+  rawTracks.forEach((t) => {
+    if (t.album && t.album !== "Single" && !albumMap.has(t.album)) {
+      albumMap.set(t.album, { title: t.album, coverUrl: t.cover_path ?? "" })
+    }
+  })
+  const albums = Array.from(albumMap.values())
 
   return (
     <>
       <div className="px-4 md:px-8 py-6 space-y-6">
 
-        {/* Page header */}
+        {/* Header */}
         <div className="flex items-start justify-between gap-4">
           <div>
             <h1 className="font-heading text-2xl font-bold text-white">My music</h1>
@@ -47,48 +44,42 @@ export function MyMusicPage() {
           </Button>
         </div>
 
-        {/* Albums + advert row */}
+        {/* Albums + advert */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-
-          {/* Albums section */}
           <div className="lg:col-span-2 rounded-lg border border-vibe-onyx-400 bg-vibe-onyx-200 p-5">
-            {/* Section label */}
             <div className="flex items-center gap-2 mb-5">
-              {/* Small album icon */}
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                 strokeWidth="1.5" className="text-vibe-amber">
-                <rect x="3" y="3" width="18" height="18" rx="2"/>
-                <path d="M3 9h18M9 21V9"/>
+                <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>
               </svg>
               <span className="text-sm font-medium text-vibe-text-secondary">My albums</span>
             </div>
-
-            {/* Album grid — horizontal scroll on mobile */}
             <ScrollArea className="w-full" orientation="horizontal">
-            <div className="flex gap-4 pb-3">
-              {/* Real albums */}
-              {MY_ALBUMS.map((album) => (
-                <AlbumCard key={album.id} title={album.title} coverUrl={album.coverUrl} />
-              ))}
-              {/* Empty slots */}
-              {Array.from({ length: Math.max(0, ALBUM_SLOT_COUNT - MY_ALBUMS.length) }).map((_, i) => (
-                <EmptyAlbumSlot key={`empty-${i}`} />
-              ))}
-            </div>
-            <ScrollBar orientation="horizontal" />
+              <div className="flex gap-4 pb-3">
+                {isLoading
+                  ? Array.from({ length: ALBUM_SLOT_COUNT }).map((_, i) => (
+                      <div key={i} className="shrink-0 w-[180px] aspect-square rounded-md bg-vibe-onyx-300 animate-pulse" />
+                    ))
+                  : <>
+                      {albums.map((a) => (
+                        <AlbumCard key={a.title} title={a.title} coverUrl={a.coverUrl} />
+                      ))}
+                      {Array.from({ length: Math.max(0, ALBUM_SLOT_COUNT - albums.length) }).map((_, i) => (
+                        <EmptyAlbumSlot key={`e-${i}`} />
+                      ))}
+                    </>
+                }
+              </div>
+              <ScrollBar orientation="horizontal" />
             </ScrollArea>
           </div>
-
-          {/* Advert placeholder */}
           <div className="hidden lg:flex rounded-lg border border-vibe-onyx-400 bg-vibe-onyx-200 items-center justify-center min-h-[280px]">
             <span className="text-xs text-vibe-text-muted uppercase tracking-widest">Advert</span>
           </div>
         </div>
 
-        {/* Top singles + advert row */}
+        {/* Top singles + advert */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-
-          {/* Top 5 Singles */}
           <div className="rounded-lg border border-vibe-onyx-400 bg-vibe-onyx-200 p-5">
             <div className="flex items-center justify-between mb-4">
               <span className="text-sm text-vibe-text-muted">My Top 5 Singles</span>
@@ -97,33 +88,116 @@ export function MyMusicPage() {
               </button>
             </div>
 
-            <div className="space-y-1">
-              {TOP_SINGLES.map((track) => (
-                <div key={track.rank} className="flex items-center gap-3 py-2 group rounded-sm hover:bg-vibe-onyx-300 px-2 transition-colors cursor-pointer">
-                  <span className="text-sm text-vibe-text-muted w-4 shrink-0">{track.rank}.</span>
-                  <img
-                    src={track.coverUrl}
-                    alt={track.title}
-                    className="h-8 w-8 rounded-sm object-cover shrink-0"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-vibe-text-primary truncate leading-tight">{track.title}</p>
-                    <p className="text-xs text-vibe-text-muted truncate">{track.artist}</p>
+            {isLoading ? (
+              <div className="space-y-3">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="flex gap-3 items-center">
+                    <div className="h-8 w-8 rounded-sm bg-vibe-onyx-400 animate-pulse shrink-0" />
+                    <div className="flex-1 space-y-1.5">
+                      <div className="h-3 w-32 rounded bg-vibe-onyx-400 animate-pulse" />
+                      <div className="h-2.5 w-20 rounded bg-vibe-onyx-300 animate-pulse" />
+                    </div>
                   </div>
-                  <button className="text-vibe-text-muted hover:text-white opacity-0 group-hover:opacity-100 transition-all">
+                ))}
+              </div>
+            ) : topFive.length === 0 ? (
+              <div className="flex flex-col items-center py-10 gap-2 text-vibe-text-muted">
+                <Music2 className="h-8 w-8 opacity-30" />
+                <p className="text-xs">No tracks uploaded yet</p>
+              </div>
+            ) : (
+              <div className="space-y-1">
+                {topFive.map((track, i) => (
+                  <div
+                    key={track.id}
+                    className="flex items-center gap-3 py-2 group rounded-sm hover:bg-vibe-onyx-300 px-2 transition-colors cursor-pointer"
+                    onClick={() => dispatch(playTrack({ track, queue: tracks }))}
+                  >
+                    <span className="text-sm text-vibe-text-muted w-4 shrink-0">{i + 1}.</span>
+                    <div className="relative h-8 w-8 rounded-sm overflow-hidden shrink-0">
+                      {track.coverUrl ? (
+                        <img src={track.coverUrl} alt={track.title} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full bg-vibe-onyx-400 flex items-center justify-center">
+                          <Music2 className="h-3.5 w-3.5 text-vibe-text-muted" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-vibe-text-primary truncate leading-tight">{track.title}</p>
+                      <p className="text-xs text-vibe-text-muted truncate">{track.artist}</p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {track.playCount > 0 && (
+                        <span className="text-xs text-vibe-text-muted tabular-nums hidden sm:flex items-center gap-1">
+                          <TrendingUp className="h-3 w-3" />
+                          {track.playCount.toLocaleString()}
+                        </span>
+                      )}
+                      <button
+                        className="text-vibe-text-muted hover:text-white opacity-0 group-hover:opacity-100 transition-all"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <MoreVertical className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="rounded-lg border border-vibe-onyx-400 bg-vibe-onyx-200 flex items-center justify-center min-h-[200px]">
+            <span className="text-xs text-vibe-text-muted uppercase tracking-widest">Advert</span>
+          </div>
+        </div>
+
+        {/* All tracks table */}
+        {!isLoading && tracks.length > 0 && (
+          <div className="rounded-lg border border-vibe-onyx-400 bg-vibe-onyx-200 p-5">
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-sm font-medium text-vibe-text-secondary">All tracks</span>
+              <span className="text-xs text-vibe-text-muted">{tracks.length} total</span>
+            </div>
+            <div className="space-y-0.5">
+              {tracks.map((track, idx) => (
+                <div
+                  key={track.id}
+                  onClick={() => dispatch(playTrack({ track, queue: tracks }))}
+                  className="flex items-center gap-4 px-3 py-2.5 rounded-md hover:bg-vibe-onyx-300 transition-colors cursor-pointer group"
+                >
+                  <span className="text-xs text-vibe-text-muted w-5 text-center tabular-nums shrink-0">
+                    {idx + 1}
+                  </span>
+                  <div className="h-9 w-9 rounded-sm overflow-hidden shrink-0">
+                    {track.coverUrl
+                      ? <img src={track.coverUrl} alt={track.title} className="w-full h-full object-cover" />
+                      : <div className="w-full h-full bg-vibe-onyx-400 flex items-center justify-center">
+                          <Music2 className="h-3.5 w-3.5 text-vibe-text-muted" />
+                        </div>
+                    }
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-white truncate">{track.title}</p>
+                    <p className="text-xs text-vibe-text-muted truncate">{track.genre || track.album}</p>
+                  </div>
+                  <div className={cn("hidden sm:flex items-center gap-1 text-xs tabular-nums", track.isLiked ? "text-vibe-red" : "text-vibe-text-muted")}>
+                    ♥ {track.likeCount}
+                  </div>
+                  <div className="hidden md:flex items-center gap-1 text-xs text-vibe-text-muted tabular-nums">
+                    ▶ {track.playCount}
+                  </div>
+                  <button
+                    onClick={(e) => e.stopPropagation()}
+                    className="text-vibe-text-muted hover:text-white opacity-0 group-hover:opacity-100 transition-all"
+                  >
                     <MoreVertical className="h-4 w-4" />
                   </button>
                 </div>
               ))}
             </div>
           </div>
-
-          {/* Advert */}
-          <div className="rounded-lg border border-vibe-onyx-400 bg-vibe-onyx-200 flex items-center justify-center min-h-[200px]">
-            <span className="text-xs text-vibe-text-muted uppercase tracking-widest">Advert</span>
-          </div>
-        </div>
-
+        )}
       </div>
 
       <UploadPanel open={uploadOpen} onClose={() => setUploadOpen(false)} />
@@ -131,17 +205,18 @@ export function MyMusicPage() {
   )
 }
 
-// ── Album card ────────────────────────────────────────────
 function AlbumCard({ title, coverUrl }: { title: string; coverUrl: string }) {
   return (
     <div className="shrink-0 w-[180px] md:w-[200px] cursor-pointer group">
       <div className="relative aspect-square rounded-md overflow-hidden mb-2">
-        <img
-          src={coverUrl}
-          alt={title}
-          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-        />
-        {/* Dark gradient overlay at bottom for title legibility */}
+        {coverUrl ? (
+          <img src={coverUrl} alt={title}
+            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+        ) : (
+          <div className="w-full h-full bg-vibe-onyx-400 flex items-center justify-center">
+            <Music2 className="h-8 w-8 text-vibe-text-muted opacity-40" />
+          </div>
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
         <p className="absolute bottom-2 left-0 right-0 text-center text-sm font-heading font-semibold text-white tracking-widest uppercase px-2 truncate">
           {title}
@@ -151,7 +226,6 @@ function AlbumCard({ title, coverUrl }: { title: string; coverUrl: string }) {
   )
 }
 
-// ── Empty album slot ──────────────────────────────────────
 function EmptyAlbumSlot() {
   return (
     <div className="shrink-0 w-[180px] md:w-[200px]">

@@ -67,12 +67,37 @@ export interface ArtistStatsOut {
 export interface TrackOut {
   id: string
   title: string
+  artist: string
+  artist_id: string
+  album: string
+  album_id: string | null
+  duration: number
   audio_path: string
   cover_path: string | null
+  genre: string
   price: number
   is_for_sale: boolean
   plays: number
   likes: number
+  releaseDate: string
+  isLiked: boolean
+}
+
+export interface ArtistProfileOut {
+  id: string
+  username: string
+  display_name: string
+  stage_name?: string
+  bio?: string
+  avatar_url?: string
+  banner_url?: string
+  followers: number
+  following: number
+  total_tracks: number
+  total_plays: number
+  is_verified?: boolean
+  top_tracks?: TrackOut[]
+  albums?: { id: string; title: string; cover_path: string | null; track_count: number }[]
 }
 
 export interface PublicTrackOut {
@@ -186,18 +211,20 @@ export function normaliseUser(u: UserResponse): User {
  */
 export function normaliseTrack(t: TrackOut, artistName = ""): Track {
   return {
-    id: t.id,
-    title: t.title,
-    artist: artistName,
-    artistId: "",
-    duration: 0,
-    audioUrl: assetUrl(t.audio_path),
-    coverUrl: assetUrl(t.cover_path),
-    genre: "",
-    playCount: t.plays,
-    likeCount: t.likes,
-    releaseDate: "",
-    isPremium: t.is_for_sale,
+    id:          t.id,
+    title:       t.title,
+    artist:      t.artist || artistName,
+    artistId:    t.artist_id ?? "",
+    album:       t.album,
+    duration:    t.duration ?? 0,
+    audioUrl:    assetUrl(t.audio_path),
+    coverUrl:    assetUrl(t.cover_path),
+    genre:       t.genre ?? "",
+    playCount:   t.plays,
+    likeCount:   t.likes,
+    releaseDate: t.releaseDate ?? "",
+    isPremium:   t.is_for_sale,
+    isLiked:     t.isLiked,
   }
 }
 
@@ -373,8 +400,8 @@ export const vibeApi = createApi({
     /** GET /artist/stats → ArtistStatsOut */
     getArtistStats: b.query<ArtistStatsOut, void>({ query: () => '/artist/stats', providesTags: ['Dashboard'] }),
 
-    getArtistProfile: b.query<unknown, string>({ query: (id) => `/artist/profile/${id}` }),
-    followArtist: b.mutation<unknown, string>({ query: (id) => ({ url: `/artist/${id}/follow`, method: 'POST' }), invalidatesTags: ['Artist'] }),
+    getArtistProfile: b.query<ArtistProfileOut, string>({ query: (id) => `/artist/profile/${id}` }),
+    followArtist: b.mutation<unknown, string>({ query: (id) => ({ url: `/artist/${id}/follow`, method: 'POST' }), invalidatesTags: ['Dashboard'] }),
     getFollowStatus: b.query<unknown, string>({ query: (id) => `/artist/${id}/follow-status` }),
 
     setPaymentSettings: b.mutation<ArtistPaymentSettingsResponse, ArtistPaymentSettingsCreate>({
@@ -521,7 +548,7 @@ export const {
   useUpdateSocialsMutation, useUpdatePreferencesMutation, useUpgradeToArtistMutation,
   useGetArtistDashboardQuery, useGetArtistPremiumDashboardQuery,
   useUploadTrackArtistMutation, useGetArtistStatsQuery,
-  useGetArtistProfileQuery, useFollowArtistMutation, useGetFollowStatusQuery,
+  useGetArtistProfileQuery, useFollowArtistMutation,
   useSetPaymentSettingsMutation, useGetPaymentSettingsQuery,
   useRequestPayoutMutation, useGetMyPayoutsQuery,
   useUploadTrackMutation, useStreamTrackQuery, useDownloadTrackQuery,
