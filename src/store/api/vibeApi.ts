@@ -166,6 +166,7 @@ export interface Track {
   title: string
   artist: string
   artistId: string
+  artistUsername?: string
   album?: string
   albumId?: string
   duration: number
@@ -241,20 +242,21 @@ function resolveArtistName(t: TrackOut, fallback = ""): string {
  */
 export function normaliseTrack(t: TrackOut, artistName = ""): Track {
   return {
-    id:          t.id,
-    title:       t.title,
-    artist:      resolveArtistName(t, artistName),
-    artistId:    t.artist_id ?? "",
-    album:       t.album,
-    duration:    t.duration ?? 0,
-    audioUrl:    assetUrl(t.audio_path),
-    coverUrl:    assetUrl(t.cover_path),
-    genre:       t.genre ?? "",
-    playCount:   t.plays,
-    likeCount:   t.likes,
-    releaseDate: t.releaseDate ?? "",
-    isPremium:   t.is_for_sale,
-    isLiked:     t.isLiked,
+    id:             t.id,
+    title:          t.title,
+    artist:         resolveArtistName(t, artistName),
+    artistId:       t.artist_id ?? "",
+    artistUsername: (t as any).artist_username ?? undefined,
+    album:          t.album,
+    duration:       t.duration ?? 0,
+    audioUrl:       assetUrl(t.audio_path),
+    coverUrl:       assetUrl(t.cover_path),
+    genre:          t.genre ?? "",
+    playCount:      t.plays,
+    likeCount:      t.likes,
+    releaseDate:    t.releaseDate ?? "",
+    isPremium:      t.is_for_sale,
+    isLiked:        t.isLiked,
   }
 }
 
@@ -430,7 +432,7 @@ export const vibeApi = createApi({
     /** GET /artist/stats → ArtistStatsOut */
     getArtistStats: b.query<ArtistStatsOut, void>({ query: () => '/artist/stats', providesTags: ['Dashboard'] }),
 
-    getArtistProfile: b.query<ArtistProfileOut, string>({ query: (id) => `/artist/profile/${id}` }),
+    getArtistProfile: b.query<ArtistProfileOut, string>({ query: (username) => `/public/artists/${username}`, providesTags: ['Dashboard'] }),
     followArtist: b.mutation<unknown, string>({ query: (id) => ({ url: `/artist/${id}/follow`, method: 'POST' }), invalidatesTags: ['Dashboard'] }),
     getFollowStatus: b.query<unknown, string>({ query: (id) => `/artist/${id}/follow-status` }),
 

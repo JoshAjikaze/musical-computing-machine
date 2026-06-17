@@ -17,29 +17,31 @@ import {
 import { assetUrl } from "@/lib/utils"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
+import { ShareDialog } from "@/components/app/ShareDialog"
 
 type Tab = "top_tracks" | "albums"
 
 export function ArtistProfilePage() {
-  const { id } = useParams<{ id: string }>()
+  const { username } = useParams<{ username: string }>()
   const navigate = useNavigate()
   const dispatch = useAppDispatch()
   const { user } = useAppSelector((s) => s.auth)
 
   const [tab, setTab]         = useState<Tab>("top_tracks")
   const [following, setFollowing] = useState(false)
+  const [shareOpen, setShareOpen] = useState(false)
 
   const { data: profile, isLoading, isError } =
-    useGetArtistProfileQuery(id ?? "", { skip: !id })
+    useGetArtistProfileQuery(username ?? "", { skip: !username })
 
   const [followArtist, { isLoading: isFollowing }] = useFollowArtistMutation()
 
-  const isOwnProfile = user?.id === id
+  const isOwnProfile = user?.username === username
 
   async function handleFollow() {
-    if (!id) return
+    if (!profile?.id) return
     try {
-      await followArtist(id).unwrap()
+      await followArtist(profile.id).unwrap()
       setFollowing((v) => !v)
     } catch {
       toast.error("Could not follow artist")
@@ -59,6 +61,16 @@ export function ArtistProfilePage() {
   const albums    = profile.albums ?? []
 
   return (
+    <>
+    <ShareDialog
+      open={shareOpen}
+      onClose={() => setShareOpen(false)}
+      title="Share Artist"
+      label={profile.display_name ?? profile.stage_name ?? profile.username}
+      sublabel={`@${profile.username}`}
+      coverUrl={profile.avatar_url ? assetUrl(profile.avatar_url) : undefined}
+      artistUsername={profile.username}
+    />
     <div className="pb-8">
       {/* ── Hero / Banner ── */}
       <div className="relative h-56 md:h-72 bg-vibe-onyx-300 overflow-hidden">
@@ -84,10 +96,7 @@ export function ArtistProfilePage() {
             <ArrowLeft className="h-4 w-4" />
           </button>
           <button
-            onClick={() => {
-              navigator.clipboard?.writeText(window.location.href)
-              toast.success("Profile link copied")
-            }}
+            onClick={() => setShareOpen(true)}
             className="h-9 w-9 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/60 transition-colors"
           >
             <Share2 className="h-4 w-4" />
@@ -251,6 +260,7 @@ export function ArtistProfilePage() {
         </AnimatePresence>
       </div>
     </div>
+    </>
   )
 }
 

@@ -13,14 +13,15 @@ import {
 } from "@/store/api/vibeApi"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
+import { ShareDialog } from "@/components/app/ShareDialog"
 
 // ── Mock data ─────────────────────────────────────────────
 const TRENDING_SINGLES: Track[] = [
-  { id: "ts1", title: "MILES AWAY",        artist: "Chalee Dip",           artistId: "a1", duration: 207, coverUrl: "https://picsum.photos/seed/miles/300/300",   audioUrl: "", genre: "Afrobeats", playCount: 0, likeCount: 0, releaseDate: "" },
-  { id: "ts2", title: "HARVEST",           artist: "Vdeeze",               artistId: "a2", duration: 214, coverUrl: "https://picsum.photos/seed/harvest2/300/300", audioUrl: "", genre: "Afrobeats", playCount: 0, likeCount: 0, releaseDate: "" },
-  { id: "ts3", title: "LOVE YOU",          artist: "Jon mills",            artistId: "a3", duration: 198, coverUrl: "https://picsum.photos/seed/loveyou/300/300",  audioUrl: "", genre: "R&B",      playCount: 0, likeCount: 0, releaseDate: "" },
-  { id: "ts4", title: "PIECE OF MY HEART", artist: "Wiz Queen Ft Davbine", artistId: "a4", duration: 221, coverUrl: "https://picsum.photos/seed/piece/300/300",    audioUrl: "", genre: "Pop",      playCount: 0, likeCount: 0, releaseDate: "" },
-  { id: "ts5", title: "GOLDEN HOUR",       artist: "Raye",                 artistId: "a5", duration: 187, coverUrl: "https://picsum.photos/seed/golden/300/300",   audioUrl: "", genre: "R&B",      playCount: 0, likeCount: 0, releaseDate: "" },
+  { id: "ts1", title: "MILES AWAY",        artist: "Chalee Dip",           artistId: "a1", artistUsername: "chaleedip",     duration: 207, coverUrl: "https://picsum.photos/seed/miles/300/300",    audioUrl: "", genre: "Afrobeats", playCount: 0, likeCount: 0, releaseDate: "" },
+  { id: "ts2", title: "HARVEST",           artist: "Vdeeze",               artistId: "a2", artistUsername: "vdeeze",         duration: 214, coverUrl: "https://picsum.photos/seed/harvest2/300/300", audioUrl: "", genre: "Afrobeats", playCount: 0, likeCount: 0, releaseDate: "" },
+  { id: "ts3", title: "LOVE YOU",          artist: "Jon mills",            artistId: "a3", artistUsername: "jonmills",       duration: 198, coverUrl: "https://picsum.photos/seed/loveyou/300/300",  audioUrl: "", genre: "R&B",      playCount: 0, likeCount: 0, releaseDate: "" },
+  { id: "ts4", title: "PIECE OF MY HEART", artist: "Wiz Queen Ft Davbine", artistId: "a4", artistUsername: "wizqueen",       duration: 221, coverUrl: "https://picsum.photos/seed/piece/300/300",    audioUrl: "", genre: "Pop",      playCount: 0, likeCount: 0, releaseDate: "" },
+  { id: "ts5", title: "GOLDEN HOUR",       artist: "Raye",                 artistId: "a5", artistUsername: "raye",           duration: 187, coverUrl: "https://picsum.photos/seed/golden/300/300",   audioUrl: "", genre: "R&B",      playCount: 0, likeCount: 0, releaseDate: "" },
 ]
 
 const AFROBEAT_CATEGORIES = [
@@ -164,8 +165,9 @@ function TrendingCard({ track, onPlay }: { track: Track; onPlay: () => void }) {
   const playlists = useAppSelector((s) => s.playlists.playlists)
   const isActive  = currentTrack?.id === track.id
 
-  const [menuOpen, setMenuOpen] = useState(false)
-  const menuRef                 = useRef<HTMLDivElement>(null)
+  const [menuOpen, setMenuOpen]   = useState(false)
+  const [shareOpen, setShareOpen] = useState(false)
+  const menuRef                   = useRef<HTMLDivElement>(null)
 
   const [addTrackApi]           = useAddTrackToPlaylistApiMutation()
   const [likeTrack]                          = useLikeTrackMutation()
@@ -216,11 +218,10 @@ function TrendingCard({ track, onPlay }: { track: Track; onPlay: () => void }) {
           .catch(() => toast.error(`Couldn't add to "${action.playlistName}"`))
         break
       case "share":
-        navigator.clipboard?.writeText(track.title).catch(() => {})
-        toast.success("Copied to clipboard")
+        setShareOpen(true)
         break
       case "view_artist":
-        if (action.artistId) navigate(`/listen/artist/${action.artistId}`)
+        if (action.artistId) navigate(`/listen/artist/${track.artistUsername ?? action.artistId}`)
         break
     }
   }
@@ -374,6 +375,21 @@ function TrendingCard({ track, onPlay }: { track: Track; onPlay: () => void }) {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Share dialog — portalled to document.body */}
+      <ShareDialog
+        open={shareOpen}
+        onClose={() => setShareOpen(false)}
+        title="Share"
+        label={track.title}
+        sublabel={track.artist}
+        coverUrl={track.coverUrl}
+        artistUsername={
+          track.artistUsername ||
+          track.artist.toLowerCase().replace(/\s+/g, "").replace(/[^a-z0-9_]/g, "")
+        }
+        trackId={track.id}
+      />
     </motion.div>
   )
 }
