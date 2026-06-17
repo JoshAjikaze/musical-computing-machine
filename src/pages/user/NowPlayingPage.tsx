@@ -11,9 +11,11 @@ import {
   setVolume, toggleMute, cycleRepeat,
   toggleShuffle, setProgress, toggleQueuePanel,
 } from "@/store/slices/playerSlice"
+import { useLikeTrackMutation, useGetLikedTracksQuery } from "@/store/api/vibeApi"
 import { seekAudio } from "@/components/app/AudioEngine"
 import { cn } from "@/lib/utils"
 import { useRef, useState, useEffect, useCallback } from "react"
+import { toast } from "sonner"
 
 function formatTime(s: number) {
   if (!isFinite(s) || isNaN(s)) return "0:00"
@@ -28,7 +30,6 @@ export function NowPlayingPage() {
     progress, duration, repeatMode, isShuffle,
   } = useAppSelector((s) => s.player)
 
-  const [liked, setLiked]         = useState(false)
   const [isSeeking, setIsSeeking] = useState(false)
   const [seekValue, setSeekValue] = useState(0)
   const progressBarRef            = useRef<HTMLDivElement>(null)
@@ -38,6 +39,26 @@ export function NowPlayingPage() {
   const hasTrackRef  = useRef(!!currentTrack)
   useEffect(() => { durationRef.current = duration },     [duration])
   useEffect(() => { hasTrackRef.current = !!currentTrack }, [currentTrack])
+
+  // Like state — derived from API
+  const [likeTrack]              = useLikeTrackMutation()
+  const { data: likedTracksRaw } = useGetLikedTracksQuery()
+  const likedIds = new Set(
+    Array.isArray(likedTracksRaw)
+      ? (likedTracksRaw as { id?: string; track_id?: string }[]).map((t) => t.id ?? t.track_id ?? "")
+      : []
+  )
+  const isLiked = currentTrack ? (likedIds.has(currentTrack.id) || !!currentTrack.isLiked) : false
+
+  async function handleLike() {
+    if (!currentTrack) return
+    try {
+      await likeTrack(currentTrack.id).unwrap()
+      toast.success(isLiked ? "Removed from favourites" : "Added to favourites")
+    } catch {
+      toast.error("Could not update favourites")
+    }
+  }
 
   const progressPct = duration > 0
     ? ((isSeeking ? seekValue : progress) / duration) * 100
@@ -203,13 +224,13 @@ export function NowPlayingPage() {
             </p>
           </div>
           <button
-            onClick={() => setLiked((v) => !v)}
+            onClick={handleLike}
             className={cn(
               "shrink-0 mt-1 transition-all duration-200",
-              liked ? "text-vibe-red scale-110" : "text-white/50 hover:text-white"
+              isLiked ? "text-vibe-red scale-110" : "text-white/50 hover:text-white"
             )}
           >
-            <Heart className={cn("h-6 w-6", liked && "fill-current")} />
+            <Heart className={cn("h-6 w-6", isLiked && "fill-current")} />
           </button>
         </div>
 

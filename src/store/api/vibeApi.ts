@@ -55,6 +55,9 @@ export interface UserResponse {
   username: string | null
   is_verified_artist: boolean
   role: string  // "LISTENER" | "ARTIST" | "ADMIN"
+  stage_name?: string | null
+  display_name?: string | null
+  full_name?: string | null
 }
 
 export interface ArtistStatsOut {
@@ -182,6 +185,7 @@ export interface User {
   email: string
   username: string | null
   displayName: string
+  stageName?: string
   avatarUrl?: string
   isPremium: boolean
   role: 'fan' | 'artist' | 'admin'
@@ -192,11 +196,19 @@ export interface User {
 /** Convert backend UserResponse → internal User */
 export function normaliseUser(u: UserResponse): User {
   const role = u.role === 'ARTIST' ? 'artist' : u.role === 'ADMIN' ? 'admin' : 'fan'
+  // Best display name: stage_name > display_name > full_name > username > email prefix
+  const displayName =
+    u.stage_name?.trim()    ||
+    u.display_name?.trim()  ||
+    u.full_name?.trim()     ||
+    u.username              ||
+    u.email.split('@')[0]
   return {
     id: u.id,
     email: u.email,
     username: u.username,
-    displayName: u.username ?? u.email.split('@')[0],
+    displayName,
+    stageName: u.stage_name ?? undefined,
     isPremium: u.is_verified_artist,
     role,
     is_verified_artist: u.is_verified_artist,
@@ -209,11 +221,29 @@ export function normaliseUser(u: UserResponse): User {
  * Map a TrackOut (artist-owned track from the backend) → Track (player-ready shape).
  * Applies assetUrl() to audio_path and cover_path so every consumer gets a full URL.
  */
+/**
+ * Resolve the best human-readable artist name from a TrackOut.
+ * The backend sometimes sends the artist's email address or "Unknown"
+ * in the `artist` field. This helper cleans that up.
+ */
+function resolveArtistName(t: TrackOut, fallback = ""): string {
+  const raw = t.artist ?? ""
+  // Treat email addresses and "Unknown" (case-insensitive) as absent
+  if (!raw || raw.toLowerCase() === "unknown" || raw.includes("@")) {
+    return fallback || "Unknown Artist"
+  }
+  return raw
+}
+
+/**
+ * Map a TrackOut (artist-owned track from the backend) → Track (player-ready shape).
+ * Applies assetUrl() to audio_path and cover_path so every consumer gets a full URL.
+ */
 export function normaliseTrack(t: TrackOut, artistName = ""): Track {
   return {
     id:          t.id,
     title:       t.title,
-    artist:      t.artist || artistName,
+    artist:      resolveArtistName(t, artistName),
     artistId:    t.artist_id ?? "",
     album:       t.album,
     duration:    t.duration ?? 0,

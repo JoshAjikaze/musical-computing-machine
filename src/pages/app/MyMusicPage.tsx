@@ -3,7 +3,7 @@ import { MoreVertical, Music2, TrendingUp } from "lucide-react"
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { Button } from "@/components/ui/button"
 import { UploadPanel } from "@/components/app/UploadPanel"
-import { useAppDispatch } from "@/hooks/redux"
+import { useAppDispatch, useAppSelector } from "@/hooks/redux"
 import { playTrack } from "@/store/slices/playerSlice"
 import { useGetMyTracksQuery, normaliseTrack } from "@/store/api/vibeApi"
 import { cn } from "@/lib/utils"
@@ -15,7 +15,10 @@ export function MyMusicPage() {
   const dispatch = useAppDispatch()
 
   const { data: rawTracks = [], isLoading } = useGetMyTracksQuery()
-  const tracks = rawTracks.map((t) => normaliseTrack(t))
+  const { user } = useAppSelector((s) => s.auth)
+  // Use stage name → display name → username as the artist label on own tracks
+  const artistLabel = user?.stageName || user?.displayName || user?.username || ""
+  const tracks = rawTracks.map((t) => normaliseTrack(t, artistLabel))
 
   // Sort by plays descending for the "Top 5" list
   const topFive = [...tracks].sort((a, b) => b.playCount - a.playCount).slice(0, 5)

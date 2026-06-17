@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
 import { Play, MoreHorizontal, Heart, Plus, ListMusic } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
@@ -6,7 +7,10 @@ import { Button } from "@/components/ui/button"
 import { useAppDispatch, useAppSelector } from "@/hooks/redux"
 import { playTrack, addToQueue } from "@/store/slices/playerSlice"
 import { addTrackToPlaylist } from "@/store/slices/playlistSlice"
-import { type NEW_RELEASES, vibeApi, type Track, normaliseNewRelease, useAddTrackToPlaylistApiMutation } from "@/store/api/vibeApi"
+import {
+  type NEW_RELEASES, vibeApi, type Track, normaliseNewRelease,
+  useAddTrackToPlaylistApiMutation, useLikeTrackMutation, useGetLikedTracksQuery,
+} from "@/store/api/vibeApi"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 
@@ -33,7 +37,7 @@ type TrackMenuAction =
   | { type: "add_to_queue" }
   | { type: "add_to_favourites" }
   | { type: "share" }
-  | { type: "view_artist" }
+  | { type: "view_artist"; artistId: string }
 
 // ── Page ─────────────────────────────────────────────────
 export function UserHomePage() {
@@ -154,28 +158,45 @@ function TrackSkeletons() {
 
 // ── Track card ────────────────────────────────────────────
 function TrendingCard({ track, onPlay }: { track: Track; onPlay: () => void }) {
-  const dispatch = useAppDispatch()
+  const dispatch  = useAppDispatch()
+  const navigate  = useNavigate()
   const { currentTrack, isPlaying } = useAppSelector((s) => s.player)
   const playlists = useAppSelector((s) => s.playlists.playlists)
   const isActive  = currentTrack?.id === track.id
 
-  const [menuOpen, setMenuOpen]   = useState(false)
-  const [liked, setLiked]         = useState(false)
-  const menuRef                   = useRef<HTMLDivElement>(null)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuRef                 = useRef<HTMLDivElement>(null)
 
-  const [addTrackApi] = useAddTrackToPlaylistApiMutation()
+  const [addTrackApi]           = useAddTrackToPlaylistApiMutation()
+  const [likeTrack]                          = useLikeTrackMutation()
+  const { data: likedTracksRaw }             = useGetLikedTracksQuery()
+
+  // Derive liked state from the server response so it's always accurate
+  const likedIds = new Set(
+    Array.isArray(likedTracksRaw)
+      ? (likedTracksRaw as { id?: string; track_id?: string }[]).map((t) => t.id ?? t.track_id ?? "")
+      : []
+  )
+  const isLiked = likedIds.has(track.id) || !!track.isLiked
 
   // Close on outside click
   useEffect(() => {
     if (!menuOpen) return
     function onDown(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setMenuOpen(false)
-      }
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false)
     }
     document.addEventListener("mousedown", onDown)
     return () => document.removeEventListener("mousedown", onDown)
   }, [menuOpen])
+
+  async function handleLike() {
+    try {
+      await likeTrack(track.id).unwrap()
+      toast.success(isLiked ? "Removed from favourites" : "Added to favourites")
+    } catch {
+      toast.error("Could not update favourites")
+    }
+  }
 
   function handleAction(action: TrackMenuAction) {
     setMenuOpen(false)
@@ -185,13 +206,10 @@ function TrendingCard({ track, onPlay }: { track: Track; onPlay: () => void }) {
         toast.success(`Added "${track.title}" to queue`)
         break
       case "add_to_favourites":
-        setLiked(true)
-        toast.success(`Added to favourites`)
+        handleLike()
         break
       case "add_to_playlist":
-        // Optimistic local update immediately
         dispatch(addTrackToPlaylist({ playlistId: action.playlistId, track }))
-        // Fire API in background — revert toast if it fails
         addTrackApi({ playlist_id: action.playlistId, track_id: track.id })
           .unwrap()
           .then(() => toast.success(`Added to "${action.playlistName}"`))
@@ -202,7 +220,7 @@ function TrendingCard({ track, onPlay }: { track: Track; onPlay: () => void }) {
         toast.success("Copied to clipboard")
         break
       case "view_artist":
-        toast("Artist page coming soon")
+        if (action.artistId) navigate(`/listen/artist/${action.artistId}`)
         break
     }
   }
@@ -251,7 +269,7 @@ function TrendingCard({ track, onPlay }: { track: Track; onPlay: () => void }) {
           </button>
 
           {/* Like indicator */}
-          {liked && (
+          {isLiked && (
             <div className="absolute top-2 left-2">
               <Heart className="h-3.5 w-3.5 text-vibe-red fill-vibe-red" />
             </div>
@@ -310,8 +328,8 @@ function TrendingCard({ track, onPlay }: { track: Track; onPlay: () => void }) {
             </div>
 
             <MenuItem
-              icon={<Heart className={cn("h-3.5 w-3.5", liked && "fill-vibe-red text-vibe-red")} />}
-              label={liked ? "Remove from favourites" : "Add to favourites"}
+              icon={<Heart className={cn("h-3.5 w-3.5", isLiked && "fill-vibe-red text-vibe-red")} />}
+              label={isLiked ? "Remove from favourites" : "Add to favourites"}
               onClick={() => handleAction({ type: "add_to_favourites" })}
             />
             <MenuItem
@@ -346,7 +364,7 @@ function TrendingCard({ track, onPlay }: { track: Track; onPlay: () => void }) {
             <MenuItem
               icon={<span className="text-[11px]">👤</span>}
               label="View artist"
-              onClick={() => handleAction({ type: "view_artist" })}
+              onClick={() => handleAction({ type: "view_artist", artistId: track.artistId })}
             />
             <MenuItem
               icon={<span className="text-[11px]">🔗</span>}

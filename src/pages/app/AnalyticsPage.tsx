@@ -1,7 +1,7 @@
 import { useState } from "react"
 import {
-  TrendingUp, Download, Users, Wallet, MoreVertical, ChevronDown,
-  Music,
+  TrendingUp, Users, Wallet, MoreVertical, ChevronDown,
+  Music, Heart,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { StatCard } from "@/components/app/StatCard"
@@ -23,21 +23,23 @@ export function AnalyticsPage() {
   console.log(StatsData)
 
   const totalfollowers = DashboardFetching ? "0M" : formatNumber(DashboardData?.stats?.total_followers as number);
-  const totalTracks = StatsFetching ? "0" : formatNumber(StatsData?.total_tracks as number);
-  const totalStreams = StatsFetching ? "0M" : formatPlays(StatsData?.total_plays as number);
-  const totalEarnings = formatCurrency(0);
+  const totalTracks    = StatsFetching ? "0"  : formatNumber(StatsData?.total_tracks as number);
+  const totalStreams    = StatsFetching ? "0M" : formatPlays(StatsData?.total_plays as number);
+  const totalLikes     = StatsFetching ? "0"  : formatNumber(StatsData?.total_likes as number);
+  const totalEarnings  = formatCurrency(0);
 
   const STATS = [
-    { label: "Total Streams", value: `${totalStreams}`, change: 16, icon: <TrendingUp className="h-5 w-5 text-purple-400" /> },
-    { label: "Total Downloads", value: "0K", change: -0.4, icon: <Download className="h-5 w-5 text-vibe-red" /> },
-    { label: "Total Tracks", value: `${totalTracks}`, change: 2, icon: <Music className="h-5 w-5 text-green-400" /> },
-    { label: "Followers", value: `${totalfollowers}`, change: 8, icon: <Users className="h-5 w-5 text-orange-400" /> },
-    { label: "Earnings", value: `${totalEarnings}`, change: 2, icon: <Wallet className="h-5 w-5 text-green-400" /> },
+    { label: "Total Streams",   value: `${totalStreams}`,   change: 16,   icon: <TrendingUp className="h-5 w-5 text-purple-400" /> },
+    { label: "Total Likes",     value: `${totalLikes}`,     change: 4,    icon: <Heart      className="h-5 w-5 text-vibe-red fill-vibe-red" /> },
+    { label: "Total Tracks",    value: `${totalTracks}`,    change: 2,    icon: <Music      className="h-5 w-5 text-green-400" /> },
+    { label: "Followers",       value: `${totalfollowers}`, change: 8,    icon: <Users      className="h-5 w-5 text-orange-400" /> },
+    { label: "Earnings",        value: `${totalEarnings}`,  change: 2,    icon: <Wallet     className="h-5 w-5 text-green-400" /> },
   ]
 
   const { data: rawTracks = [], isLoading: tracksLoading } = useGetMyTracksQuery()
+  const artistLabel = user?.stageName || user?.displayName || user?.username || ""
   const topTracks = rawTracks
-    .map((t) => normaliseTrack(t))
+    .map((t) => normaliseTrack(t, artistLabel))
     .sort((a, b) => b.playCount - a.playCount)
     .slice(0, 5)
 
