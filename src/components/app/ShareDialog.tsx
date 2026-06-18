@@ -1,12 +1,14 @@
 /**
  * ShareDialog — Portal-based share sheet.
  *
- * Shows two one-click copyable share URLs:
+ * Always shows two one-click copyable URL pills:
  *   • Artist profile → https://vibegarage.app/artist/{username}
  *   • Track          → https://vibegarage.app/track/{trackId}
  *
- * Either or both can be provided. If only one is provided only that
- * pill is shown. The QR tab uses the artist URL when available.
+ * Artist URL resolution priority:
+ *   1. artistUsername  (explicit username from API)
+ *   2. artistId        (ID fallback when username unavailable)
+ *   Both produce a valid shareable URL.
  */
 
 import { useState, useEffect } from "react"
@@ -23,35 +25,33 @@ import { useGetArtistQrCodeQuery } from "@/store/api/vibeApi"
 // ── Constants ──────────────────────────────────────────────
 const BASE_URL = "https://vibegarage.app"
 
-export function artistShareUrl(username: string) {
-  return `${BASE_URL}/artist/${username}`
-}
+export const artistShareUrl = (usernameOrId: string) =>
+  `${BASE_URL}/artist/${usernameOrId}`
 
-export function trackShareUrl(trackId: string) {
-  return `${BASE_URL}/track/${trackId}`
-}
+export const trackShareUrl = (trackId: string) =>
+  `${BASE_URL}/track/${trackId}`
 
 // ── Types ──────────────────────────────────────────────────
 export interface ShareDialogProps {
   open: boolean
   onClose: () => void
   title?: string
-  /** Cover / avatar image for the preview row */
   coverUrl?: string
-  /** Main label in the preview row (track title or artist name) */
   label: string
-  /** Secondary label (e.g. artist name when sharing a track) */
   sublabel?: string
   /**
-   * When provided, shows an "Artist Profile" URL pill:
-   * https://vibegarage.app/artist/{artistUsername}
-   * Also enables the QR Code tab.
+   * Preferred: exact username from backend.
+   * Used for the artist URL pill AND the QR code tab.
+   * e.g. "chaleedip" → https://vibegarage.app/artist/chaleedip
    */
   artistUsername?: string
   /**
-   * When provided, shows a "Track" URL pill:
-   * https://vibegarage.app/track/{trackId}
+   * Fallback when artistUsername is unavailable.
+   * e.g. "uuid-abc-123" → https://vibegarage.app/artist/uuid-abc-123
+   * QR tab is hidden when only artistId is available (no username endpoint).
    */
+  artistId?: string
+  /** Track ID → https://vibegarage.app/track/{trackId} */
   trackId?: string
 }
 
@@ -103,7 +103,6 @@ function CopyPill({
         copied && "ring-1 ring-green-500/40"
       )}
     >
-      {/* Type icon */}
       <span className={cn(
         "shrink-0 h-7 w-7 rounded-lg flex items-center justify-center",
         "bg-vibe-onyx-400 text-vibe-text-muted group-hover:text-white transition-colors"
@@ -111,7 +110,6 @@ function CopyPill({
         {icon}
       </span>
 
-      {/* URL + label */}
       <div className="flex-1 min-w-0 text-left">
         <p className="text-[10px] font-medium text-vibe-text-muted uppercase tracking-wider leading-none mb-0.5">
           {label}
@@ -119,7 +117,6 @@ function CopyPill({
         <p className="text-xs text-vibe-text-secondary font-mono truncate">{url}</p>
       </div>
 
-      {/* Copy indicator */}
       <span className={cn(
         "shrink-0 flex items-center gap-1 text-[10px] font-medium px-2 py-1 rounded-md transition-all",
         copied
@@ -144,21 +141,26 @@ export function ShareDialog({
   label,
   sublabel,
   artistUsername,
+  artistId,
   trackId,
 }: ShareDialogProps) {
   const [tab, setTab] = useState<Tab>("link")
 
   useEffect(() => { if (open) setTab("link") }, [open])
-
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : ""
     return () => { document.body.style.overflow = "" }
   }, [open])
 
-  const artistUrl = artistUsername ? artistShareUrl(artistUsername) : null
-  const trackUrl  = trackId       ? trackShareUrl(trackId)         : null
+  // Resolve the best available artist identifier for URL + social sharing
+  const artistSlug = artistUsername || artistId || null
+  const artistUrl  = artistSlug ? artistShareUrl(artistSlug) : null
+  const trackUrl   = trackId    ? trackShareUrl(trackId)     : null
 
-  // Primary URL for social sharing — prefer artist, fall back to track
+  // QR tab only available when we have an actual username (not just an ID)
+  const hasQr = !!artistUsername
+
+  // Primary URL for social share buttons — prefer artist, fall back to track
   const primaryUrl     = artistUrl ?? trackUrl ?? ""
   const encodedPrimary = encodeURIComponent(primaryUrl)
   const encodedLabel   = encodeURIComponent(label)
@@ -246,8 +248,8 @@ export function ShareDialog({
                 </div>
               </div>
 
-              {/* Tabs — only when QR is available */}
-              {artistUsername && (
+              {/* Tabs — only when QR username is available */}
+              {hasQr && (
                 <div className="flex border-b border-vibe-onyx-400">
                   {(["link", "qr"] as Tab[]).map((t) => (
                     <button
@@ -275,10 +277,9 @@ export function ShareDialog({
 
               {/* Content */}
               <div>
-                {(!artistUsername || tab === "link") ? (
+                {(!hasQr || tab === "link") ? (
                   <div className="px-5 py-4 space-y-4">
-
-                    {/* One-click URL pills */}
+                    {/* URL Pills — always render both when data is available */}
                     <div className="space-y-2">
                       {artistUrl && (
                         <CopyPill
@@ -327,7 +328,7 @@ export function ShareDialog({
                   </div>
                 ) : (
                   <QrPanel
-                    username={artistUsername}
+                    username={artistUsername!}
                     label={label}
                     artistUrl={artistUrl!}
                   />
@@ -404,7 +405,10 @@ function QrPanel({
               : "bg-vibe-onyx-300 text-vibe-text-secondary hover:text-white hover:bg-vibe-onyx-400"
           )}
         >
-          {copied ? <><Check className="h-3.5 w-3.5" />Copied!</> : <><Copy className="h-3.5 w-3.5" />Copy Link</>}
+          {copied
+            ? <><Check className="h-3.5 w-3.5" />Copied!</>
+            : <><Copy className="h-3.5 w-3.5" />Copy Link</>
+          }
         </button>
         {qrUrl && (
           <a

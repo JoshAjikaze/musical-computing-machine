@@ -459,6 +459,31 @@ export const vibeApi = createApi({
     getTrendingTracks: b.query<PublicTrackOut[], void>({ query: () => '/tracks/public/trending', providesTags: ['Track'] }),
 
     // ── Albums ────────────────────────────────────────────────────
+    /** POST /albums/create  multipart: { title, cover?, description?, year?, release_date? } */
+    createAlbum: b.mutation<{ id: string; title: string; status: string }, FormData>({
+      query: (body) => ({ url: '/albums/create', method: 'POST', body }),
+      invalidatesTags: ['Album'],
+    }),
+    /** POST /albums/{album_id}/tracks  multipart: { title, audio, cover?, genre?, price?, is_for_sale? } */
+    addTrackToAlbum: b.mutation<TrackOut, { albumId: string; body: FormData }>({
+      query: ({ albumId, body }) => ({ url: `/albums/${albumId}/tracks`, method: 'POST', body }),
+      invalidatesTags: ['Album', 'Track'],
+    }),
+    /** GET /albums/{album_id}  → album details */
+    getAlbumById: b.query<{ id: string; title: string; status: string; tracks: TrackOut[] }, string>({
+      query: (id) => `/albums/${id}`,
+      providesTags: (_r, _e, id) => [{ type: 'Album', id }],
+    }),
+    /** PATCH /albums/{album_id}/publish */
+    publishAlbum: b.mutation<unknown, string>({
+      query: (id) => ({ url: `/albums/${id}/publish`, method: 'PATCH' }),
+      invalidatesTags: ['Album'],
+    }),
+    /** PATCH /albums/{album_id}/draft */
+    saveAlbumDraft: b.mutation<unknown, string>({
+      query: (id) => ({ url: `/albums/${id}/draft`, method: 'PATCH' }),
+      invalidatesTags: ['Album'],
+    }),
     bulkUploadAlbum: b.mutation<unknown, FormData>({ query: (body) => ({ url: '/albums/bulk-upload', method: 'POST', body }), invalidatesTags: ['Album'] }),
 
     // ── Listener Dashboard ────────────────────────────────────────
@@ -586,6 +611,11 @@ export const {
   useUploadTrackMutation, useStreamTrackQuery, useDownloadTrackQuery,
   useGetMyTracksQuery, useLikeTrackMutation,
   useGetLatestTracksQuery, useGetTrendingTracksQuery,
+  useCreateAlbumMutation,
+  useAddTrackToAlbumMutation,
+  useGetAlbumByIdQuery,
+  usePublishAlbumMutation,
+  useSaveAlbumDraftMutation,
   useBulkUploadAlbumMutation,
   useGetListenerDashboardQuery, useGetLikedTracksQuery, useGetLikesQuery,
   useGetFollowingArtistsQuery, useGetRecentlyPlayedQuery, useGetListeningHistoryQuery,

@@ -382,12 +382,17 @@ function TrendingCard({ track, onPlay }: { track: Track; onPlay: () => void }) {
         onClose={() => setShareOpen(false)}
         title="Share"
         label={track.title}
-        sublabel={track.artist}
+        sublabel={track.artist || undefined}
         coverUrl={track.coverUrl}
-        artistUsername={
-          track.artistUsername ||
-          track.artist.toLowerCase().replace(/\s+/g, "").replace(/[^a-z0-9_]/g, "")
-        }
+        artistUsername={(() => {
+          if (track.artistUsername) return track.artistUsername
+          if (track.artist) {
+            const slug = track.artist.toLowerCase().replace(/\s+/g, "").replace(/[^a-z0-9_]/g, "")
+            return slug || undefined
+          }
+          return undefined
+        })()}
+        artistId={track.artistId || undefined}
         trackId={track.id}
       />
     </motion.div>
