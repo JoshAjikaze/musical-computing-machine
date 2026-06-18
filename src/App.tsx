@@ -1,6 +1,6 @@
 import { Provider } from "react-redux"
 import { PersistGate } from "redux-persist/integration/react"
-import { HashRouter, Routes, Route, Navigate, useLocation } from "react-router-dom"
+import { Routes, Route, Navigate, useLocation, BrowserRouter } from "react-router-dom"
 import { store, persistor } from "./store"
 import { ErrorBoundary, SectionErrorBoundary } from "./components/ui/error-boundary"
 import { Navbar } from "./components/layout/Navbar"
@@ -54,7 +54,7 @@ function App() {
     <ErrorBoundary>
       <Provider store={store}>
         <PersistGate loading={null} persistor={persistor}>
-          <HashRouter>
+          <BrowserRouter>
             <Layout />
             <AudioEngine />
             <Toaster />
@@ -116,7 +116,7 @@ function App() {
 
             <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
-          </HashRouter>
+          </BrowserRouter>
         </PersistGate>
       </Provider>
     </ErrorBoundary>
