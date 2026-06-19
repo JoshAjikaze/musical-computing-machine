@@ -1134,8 +1134,8 @@ function Single2Form({
         <p className="text-sm font-medium text-vibe-text-secondary">Upload Track</p>
         <FileDropzone
           accept=".mp3,.wav,.m4a"
-          hint="MP3, WAV or M4A – Max file size 10MB"
-          maxSizeMB={10}
+          hint="MP3, WAV or M4A – Max file size 50MB"
+          maxSizeMB={50}
           value={audioFile}
           onChange={(f) => { setAudioFile(f); if (f) setAudioError("") }}
           type="audio"

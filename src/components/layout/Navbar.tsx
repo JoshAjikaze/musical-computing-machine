@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
 import { Link, useLocation, useNavigate } from "react-router-dom"
-import { Menu, X, Search } from "lucide-react"
+import { Menu, X } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { VibeGarageLogo } from "@/components/ui/logo"
@@ -65,17 +65,16 @@ export function Navbar() {
           </ul>
 
           <div className="hidden md:flex items-center gap-3">
-            <button className="p-2 text-vibe-text-muted hover:text-white transition-colors rounded-sm hover:bg-vibe-onyx-300" aria-label="Search">
-              <Search className="h-5 w-5" />
-            </button>
+         
             {isAuthenticated && user ? (
               <div className="flex items-center gap-3">
                 <AvatarDropdown profileHref="/listen/profile" logoutRedirect="/login" />
               </div>
             ) : (
               <>
-                <Button variant="ghost" size="sm" onClick={() => navigate("/login")}>Sign In</Button>
-                <Button variant="default" size="sm" onClick={() => navigate("/join")}>Join the Vibe</Button>
+                <Button className="uppercase hidden" variant="ghost" size="sm" onClick={() => navigate("/login")}>Sign In</Button>
+                <Button className="normal-case" variant="ghost" size="sm" onClick={() => navigate("/")}>Download</Button>
+                <Button className="normal-case" variant="ghost" size="sm" onClick={() => navigate("/")}>FAQ</Button>
               </>
             )}
           </div>

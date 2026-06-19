@@ -9,42 +9,42 @@ import { StatCard } from "@/components/app/StatCard"
 const STATS = [
   {
     label: "Total Earnings",
-    value: "$10,900",
-    change: 2,
+    value: " ₦0",
+    change: 0,
     icon: <Wallet className="h-5 w-5 text-green-400" />,
   },
   {
     label: "Total Downloads",
-    value: "5,240",
-    change: -0.41,
+    value: "0",
+    change: 0,
     icon: <Download className="h-5 w-5 text-vibe-red" />,
   },
   {
     label: "Total Streams",
-    value: "142,568",
-    change: 16,
+    value: "0",
+    change: 0,
     icon: <TrendingUp className="h-5 w-5 text-purple-400" />,
   },
 ]
 
 const CHART_DATA = [
-  { month: "Jan", Earnings: 750  },
-  { month: "Feb", Earnings: 1320 },
-  { month: "Mar", Earnings: 1150 },
-  { month: "Apr", Earnings: 1700 },
-  { month: "May", Earnings: 1900 },
-  { month: "Jun", Earnings: 2300 },
+  { month: "Jan", Earnings: 0 },
+  { month: "Feb", Earnings: 0 },
+  { month: "Mar", Earnings: 0 },
+  { month: "Apr", Earnings: 0 },
+  { month: "May", Earnings: 0 },
+  { month: "Jun", Earnings: 0 },
 ]
 
 const TOP_TRACKS = [
-  { rank: 1, title: "Miles away",   artist: "Chalee Dip", amount: "$1,200", coverUrl: "https://picsum.photos/seed/s1/40/40" },
-  { rank: 2, title: "Kung Fu",      artist: "Chalee Dip", amount: "$800",   coverUrl: "https://picsum.photos/seed/s2/40/40" },
-  { rank: 3, title: "Know ya",      artist: "Chalee Dip", amount: "$750",   coverUrl: "https://picsum.photos/seed/s3/40/40" },
+  { rank: 1, title: "Miles away", artist: "Chalee Dip", amount: "$1,200", coverUrl: "https://picsum.photos/seed/s1/40/40" },
+  { rank: 2, title: "Kung Fu", artist: "Chalee Dip", amount: "$800", coverUrl: "https://picsum.photos/seed/s2/40/40" },
+  { rank: 3, title: "Know ya", artist: "Chalee Dip", amount: "$750", coverUrl: "https://picsum.photos/seed/s3/40/40" },
 ]
 
 const TRANSACTIONS = [
-  { label: "Payout - June",  amount: "$2,400" },
-  { label: "Payout - May",   amount: "$2,000" },
+  { label: "Payout - June", amount: "$2,400" },
+  { label: "Payout - May", amount: "$2,000" },
   { label: "Payout - April", amount: "$1,800" },
 ]
 
@@ -145,7 +145,7 @@ export function EarningsPage() {
             </button>
           </div>
 
-          <div className="space-y-1">
+          <div className="space-y-1 hidden">
             {TOP_TRACKS.map((track) => (
               <div
                 key={track.rank}
@@ -168,6 +168,7 @@ export function EarningsPage() {
               </div>
             ))}
           </div>
+          <div className="text-vibe-text-secondary text-center">Not Available</div>
         </div>
 
         {/* Recent Transactions */}
@@ -179,7 +180,7 @@ export function EarningsPage() {
             </button>
           </div>
 
-          <div className="space-y-1">
+          <div className="space-y-1 hidden">
             {TRANSACTIONS.map((tx, i) => (
               <div
                 key={i}
@@ -190,6 +191,7 @@ export function EarningsPage() {
               </div>
             ))}
           </div>
+          <div className="text-vibe-text-secondary text-center">Not Available</div>
         </div>
 
       </div>

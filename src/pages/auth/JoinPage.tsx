@@ -373,10 +373,8 @@ function Step3({ wizard }: { wizard: WizardState }) {
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="fan">Fan / Listener</SelectItem>
+                  <SelectItem value="fan">Listener</SelectItem>
                   <SelectItem value="artist">Artist</SelectItem>
-                  <SelectItem value="label">Record Label</SelectItem>
-                  <SelectItem value="producer">Producer</SelectItem>
                 </SelectContent>
               </Select>
               <FormMessage />
