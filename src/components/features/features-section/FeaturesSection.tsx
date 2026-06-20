@@ -175,7 +175,7 @@ function EarningsDashboardIllustration() {
       {[
         { x: 35, label: "Streams", value: "298.7K", color: "#6C3EB8" },
         { x: 165, label: "Revenue", value: "131.7M", color: "#22C55E" },
-        { x: 285, label: "Earnings", value: "$10.5M", color: "#F4A435" },
+        { x: 285, label: "Earnings", value: "₦10.5M", color: "#F4A435" },
       ].map((card) => (
         <g key={card.label}>
           <rect x={card.x} y="65" width="100" height="60" rx="4" fill="#1E122E" stroke={card.color} strokeWidth="0.75" strokeOpacity="0.4" />

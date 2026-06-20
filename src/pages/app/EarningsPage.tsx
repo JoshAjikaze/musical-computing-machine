@@ -2,51 +2,11 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Legend,
 } from "recharts"
-import { MoreVertical, Wallet, Download, TrendingUp } from "lucide-react"
+import { MoreVertical, Wallet, Download, TrendingUp, Music2, Receipt } from "lucide-react"
 import { StatCard } from "@/components/app/StatCard"
-
-// ── Mock data (matches design values exactly) ─────────────
-const STATS = [
-  {
-    label: "Total Earnings",
-    value: " ₦0",
-    change: 0,
-    icon: <Wallet className="h-5 w-5 text-green-400" />,
-  },
-  {
-    label: "Total Downloads",
-    value: "0",
-    change: 0,
-    icon: <Download className="h-5 w-5 text-vibe-red" />,
-  },
-  {
-    label: "Total Streams",
-    value: "0",
-    change: 0,
-    icon: <TrendingUp className="h-5 w-5 text-purple-400" />,
-  },
-]
-
-const CHART_DATA = [
-  { month: "Jan", Earnings: 0 },
-  { month: "Feb", Earnings: 0 },
-  { month: "Mar", Earnings: 0 },
-  { month: "Apr", Earnings: 0 },
-  { month: "May", Earnings: 0 },
-  { month: "Jun", Earnings: 0 },
-]
-
-const TOP_TRACKS = [
-  { rank: 1, title: "Miles away", artist: "Chalee Dip", amount: "$1,200", coverUrl: "https://picsum.photos/seed/s1/40/40" },
-  { rank: 2, title: "Kung Fu", artist: "Chalee Dip", amount: "$800", coverUrl: "https://picsum.photos/seed/s2/40/40" },
-  { rank: 3, title: "Know ya", artist: "Chalee Dip", amount: "$750", coverUrl: "https://picsum.photos/seed/s3/40/40" },
-]
-
-const TRANSACTIONS = [
-  { label: "Payout - June", amount: "$2,400" },
-  { label: "Payout - May", amount: "$2,000" },
-  { label: "Payout - April", amount: "$1,800" },
-]
+import { useAppSelector } from "@/hooks/redux"
+import { useGetArtistStatsQuery, useGetMyTracksQuery, normaliseTrack } from "@/store/api/vibeApi"
+import { formatCurrency, formatPlays } from "@/lib/formatters"
 
 // ── Custom tooltip ────────────────────────────────────────
 function ChartTooltip({ active, payload, label }: {
@@ -58,13 +18,52 @@ function ChartTooltip({ active, payload, label }: {
   return (
     <div className="rounded-md bg-vibe-onyx-300 border border-vibe-onyx-400 px-3 py-2 shadow-xl">
       <p className="text-xs text-vibe-text-muted mb-1">{label}</p>
-      <p className="text-sm font-semibold text-white">${payload[0].value.toLocaleString()}</p>
+      <p className="text-sm font-semibold text-white">{formatCurrency(payload[0].value)}</p>
     </div>
   )
 }
 
+// Empty 6-month chart scaffold — no fabricated values, all zero until real data exists
+const EMPTY_CHART_DATA = [
+  { month: "Jan", Earnings: 0 },
+  { month: "Feb", Earnings: 0 },
+  { month: "Mar", Earnings: 0 },
+  { month: "Apr", Earnings: 0 },
+  { month: "May", Earnings: 0 },
+  { month: "Jun", Earnings: 0 },
+]
+
 // ── Page ──────────────────────────────────────────────────
 export function EarningsPage() {
+  const { user } = useAppSelector((s) => s.auth)
+  const artistLabel = user?.stageName || user?.displayName || user?.username || ""
+
+  const { data: stats, isFetching: statsLoading } = useGetArtistStatsQuery()
+  const { data: rawTracks = [], isLoading: tracksLoading } = useGetMyTracksQuery()
+
+  const topTracks = rawTracks
+    .map((t) => normaliseTrack(t, artistLabel))
+    .sort((a, b) => b.playCount - a.playCount)
+    .slice(0, 3)
+
+  const STATS = [
+    {
+      label: "Total Earnings",
+      value: formatCurrency(0),
+      icon: <Wallet className="h-5 w-5 text-green-400" />,
+    },
+    {
+      label: "Total Downloads",
+      value: "0",
+      icon: <Download className="h-5 w-5 text-vibe-red" />,
+    },
+    {
+      label: "Total Streams",
+      value: statsLoading ? "0" : formatPlays(stats?.total_plays),
+      icon: <TrendingUp className="h-5 w-5 text-purple-400" />,
+    },
+  ]
+
   return (
     <div className="px-4 md:px-8 py-6 space-y-6">
 
@@ -88,7 +87,7 @@ export function EarningsPage() {
         <div className="h-[280px] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
-              data={CHART_DATA}
+              data={EMPTY_CHART_DATA}
               margin={{ top: 8, right: 8, left: -8, bottom: 0 }}
               barCategoryGap="35%"
             >
@@ -107,7 +106,7 @@ export function EarningsPage() {
                 axisLine={false}
                 tickLine={false}
                 tick={{ fill: "#6B6B6B", fontSize: 12 }}
-                tickFormatter={(v) => v.toLocaleString()}
+                tickFormatter={(v) => formatCurrency(v)}
                 ticks={[0, 600, 1200, 1800, 2400]}
                 domain={[0, 2400]}
               />
@@ -145,30 +144,49 @@ export function EarningsPage() {
             </button>
           </div>
 
-          <div className="space-y-1 hidden">
-            {TOP_TRACKS.map((track) => (
-              <div
-                key={track.rank}
-                className="flex items-center gap-3 py-2 px-2 rounded-sm hover:bg-vibe-onyx-300 transition-colors group cursor-pointer"
-              >
-                <span className="text-sm text-vibe-text-muted w-4 shrink-0">{track.rank}.</span>
-                <img
-                  src={track.coverUrl}
-                  alt={track.title}
-                  className="h-8 w-8 rounded-sm object-cover shrink-0"
-                />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-vibe-text-primary truncate leading-tight">{track.title}</p>
-                  <p className="text-xs text-vibe-text-muted truncate">{track.artist}</p>
+          {tracksLoading ? (
+            <div className="space-y-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="flex gap-3 items-center animate-pulse">
+                  <div className="h-8 w-8 rounded-sm bg-vibe-onyx-400 shrink-0" />
+                  <div className="flex-1 space-y-1.5">
+                    <div className="h-3 w-32 rounded bg-vibe-onyx-400" />
+                    <div className="h-2.5 w-20 rounded bg-vibe-onyx-300" />
+                  </div>
                 </div>
-                <span className="text-sm font-medium text-white shrink-0">{track.amount}</span>
-                <button className="text-vibe-text-muted hover:text-white opacity-0 group-hover:opacity-100 transition-all ml-1">
-                  <MoreVertical className="h-4 w-4" />
-                </button>
-              </div>
-            ))}
-          </div>
-          <div className="text-vibe-text-secondary text-center">Not Available</div>
+              ))}
+            </div>
+          ) : topTracks.length === 0 ? (
+            <div className="flex flex-col items-center py-10 gap-2 text-vibe-text-muted">
+              <Music2 className="h-8 w-8 opacity-30" />
+              <p className="text-xs">No earning tracks yet</p>
+            </div>
+          ) : (
+            <div className="space-y-1">
+              {topTracks.map((track, i) => (
+                <div
+                  key={track.id}
+                  className="flex items-center gap-3 py-2 px-2 rounded-sm hover:bg-vibe-onyx-300 transition-colors group cursor-pointer"
+                >
+                  <span className="text-sm text-vibe-text-muted w-4 shrink-0">{i + 1}.</span>
+                  <div className="h-8 w-8 rounded-sm bg-vibe-onyx-300 shrink-0 overflow-hidden">
+                    {track.coverUrl
+                      ? <img src={track.coverUrl} alt={track.title} className="h-full w-full object-cover" />
+                      : <div className="h-full w-full flex items-center justify-center"><Music2 className="h-3.5 w-3.5 text-vibe-text-muted" /></div>
+                    }
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-vibe-text-primary truncate leading-tight">{track.title}</p>
+                    <p className="text-xs text-vibe-text-muted truncate">{track.artist}</p>
+                  </div>
+                  <span className="text-sm font-medium text-white shrink-0">{formatCurrency(0)}</span>
+                  <button className="text-vibe-text-muted hover:text-white opacity-0 group-hover:opacity-100 transition-all ml-1">
+                    <MoreVertical className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Recent Transactions */}
@@ -180,18 +198,10 @@ export function EarningsPage() {
             </button>
           </div>
 
-          <div className="space-y-1 hidden">
-            {TRANSACTIONS.map((tx, i) => (
-              <div
-                key={i}
-                className="flex items-center justify-between py-3 px-2 rounded-sm hover:bg-vibe-onyx-300 transition-colors cursor-pointer border-b border-vibe-onyx-400/40 last:border-0"
-              >
-                <span className="text-sm text-vibe-text-secondary">{tx.label}</span>
-                <span className="text-sm font-medium text-white">{tx.amount}</span>
-              </div>
-            ))}
+          <div className="flex flex-col items-center py-10 gap-2 text-vibe-text-muted">
+            <Receipt className="h-8 w-8 opacity-30" />
+            <p className="text-xs">No transactions yet</p>
           </div>
-          <div className="text-vibe-text-secondary text-center">Not Available</div>
         </div>
 
       </div>

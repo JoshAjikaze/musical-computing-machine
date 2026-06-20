@@ -69,6 +69,7 @@ export function ArtistProfilePage() {
       label={profile.display_name ?? profile.stage_name ?? profile.username}
       sublabel={`@${profile.username}`}
       coverUrl={profile.avatar_url ? assetUrl(profile.avatar_url) : undefined}
+      artistId={profile.id}
       artistUsername={profile.username}
     />
     <div className="pb-8">

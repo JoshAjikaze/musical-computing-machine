@@ -1,6 +1,6 @@
 import { Provider } from "react-redux"
 import { PersistGate } from "redux-persist/integration/react"
-import { Routes, Route, Navigate, useLocation, BrowserRouter } from "react-router-dom"
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom"
 import { store, persistor } from "./store"
 import { ErrorBoundary, SectionErrorBoundary } from "./components/ui/error-boundary"
 import { Navbar } from "./components/layout/Navbar"

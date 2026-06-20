@@ -15,14 +15,14 @@ interface EarningsRow {
 const REVENUE_STATS = [
   {
     label:    "Total Revenue",
-    value:    "$23,400",
+    value:    "₦23,400",
     sub:      "All time platform earnings",
     icon:     <DollarSign className="h-5 w-5 text-vibe-amber"  />,
     iconBg:   "bg-vibe-amber/15",
   },
   {
     label:    "Pending Payouts",
-    value:    "$1,200",
+    value:    "₦1,200",
     sub:      "Awaiting artist withdrawal",
     icon:     <Clock       className="h-5 w-5 text-vibe-red"    />,
     iconBg:   "bg-vibe-red/15",
@@ -36,7 +36,7 @@ const REVENUE_STATS = [
   },
   {
     label:    "Completed Payouts",
-    value:    "$18,900",
+    value:    "₦18,900",
     sub:      "Total paid to artists",
     icon:     <CheckCircle className="h-5 w-5 text-purple-400"  />,
     iconBg:   "bg-purple-500/15",
@@ -44,22 +44,22 @@ const REVENUE_STATS = [
 ]
 
 const ALL_ARTIST_EARNINGS: EarningsRow[] = [
-  { artist: "Chalee Dip",    earnings: "$2,300", withdrawn: "$2,000", pending: "$300"  },
-  { artist: "Amara Nwosu",   earnings: "$5,100", withdrawn: "$4,500", pending: "$600"  },
-  { artist: "Victor Desire", earnings: "$1,800", withdrawn: "$1,500", pending: "$300"  },
-  { artist: "Kai Mercer",    earnings: "$3,750", withdrawn: "$3,200", pending: "$550"  },
-  { artist: "Luna Echoes",   earnings: "$980",   withdrawn: "$800",   pending: "$180"  },
-  { artist: "Raye Solaris",  earnings: "$4,200", withdrawn: "$3,800", pending: "$400"  },
-  { artist: "Zara Bloom",    earnings: "$620",   withdrawn: "$500",   pending: "$120"  },
-  { artist: "DJ Mazur",      earnings: "$1,150", withdrawn: "$900",   pending: "$250"  },
+  { artist: "Chalee Dip",    earnings: "₦2,300", withdrawn: "₦2,000", pending: "₦300"  },
+  { artist: "Amara Nwosu",   earnings: "₦5,100", withdrawn: "₦4,500", pending: "₦600"  },
+  { artist: "Victor Desire", earnings: "₦1,800", withdrawn: "₦1,500", pending: "₦300"  },
+  { artist: "Kai Mercer",    earnings: "₦3,750", withdrawn: "₦3,200", pending: "₦550"  },
+  { artist: "Luna Echoes",   earnings: "₦980",   withdrawn: "₦800",   pending: "₦180"  },
+  { artist: "Raye Solaris",  earnings: "₦4,200", withdrawn: "₦3,800", pending: "₦400"  },
+  { artist: "Zara Bloom",    earnings: "₦620",   withdrawn: "₦500",   pending: "₦120"  },
+  { artist: "DJ Mazur",      earnings: "₦1,150", withdrawn: "₦900",   pending: "₦250"  },
 ]
 
 const ALL_WITHDRAWAL_REQUESTS: EarningsRow[] = [
-  { artist: "Chalee Dip",    earnings: "$2,300", withdrawn: "$2,000", pending: "$300"  },
-  { artist: "Victor Desire", earnings: "$1,800", withdrawn: "$1,500", pending: "$300"  },
-  { artist: "Luna Echoes",   earnings: "$980",   withdrawn: "$800",   pending: "$180"  },
-  { artist: "Kai Mercer",    earnings: "$3,750", withdrawn: "$3,200", pending: "$550"  },
-  { artist: "DJ Mazur",      earnings: "$1,150", withdrawn: "$900",   pending: "$250"  },
+  { artist: "Chalee Dip",    earnings: "₦2,300", withdrawn: "₦2,000", pending: "₦300"  },
+  { artist: "Victor Desire", earnings: "₦1,800", withdrawn: "₦1,500", pending: "₦300"  },
+  { artist: "Luna Echoes",   earnings: "₦980",   withdrawn: "₦800",   pending: "₦180"  },
+  { artist: "Kai Mercer",    earnings: "₦3,750", withdrawn: "₦3,200", pending: "₦550"  },
+  { artist: "DJ Mazur",      earnings: "₦1,150", withdrawn: "₦900",   pending: "₦250"  },
 ]
 
 const COMMISSION_PRESETS = ["5%", "10%", "15%", "20%"] as const

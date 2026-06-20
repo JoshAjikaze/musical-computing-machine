@@ -5,13 +5,15 @@ interface StatCardProps {
   icon: React.ReactNode
   label: string
   value: string
-  change: number       // percentage, positive = up
+  /** Percentage change, positive = up. Omit when no real trend data exists yet. */
+  change?: number
   period?: string
   className?: string
 }
 
 export function StatCard({ icon, label, value, change, period = "vs last 7 days", className }: StatCardProps) {
-  const isUp = change >= 0
+  const hasChange = typeof change === "number"
+  const isUp = (change ?? 0) >= 0
 
   return (
     <div className={cn(
@@ -27,16 +29,18 @@ export function StatCard({ icon, label, value, change, period = "vs last 7 days"
 
       <p className="font-heading text-3xl font-bold text-white">{value}</p>
 
-      <div className="flex items-center gap-1.5">
-        {isUp
-          ? <TrendingUp className="h-3.5 w-3.5 text-green-400" />
-          : <TrendingDown className="h-3.5 w-3.5 text-vibe-red" />
-        }
-        <span className={cn("text-xs font-medium", isUp ? "text-green-400" : "text-vibe-red")}>
-          {isUp ? "+" : ""}{change}%
-        </span>
-        <span className="text-xs text-vibe-text-muted">{period}</span>
-      </div>
+      {hasChange && (
+        <div className="flex items-center gap-1.5">
+          {isUp
+            ? <TrendingUp className="h-3.5 w-3.5 text-green-400" />
+            : <TrendingDown className="h-3.5 w-3.5 text-vibe-red" />
+          }
+          <span className={cn("text-xs font-medium", isUp ? "text-green-400" : "text-vibe-red")}>
+            {isUp ? "+" : ""}{change}%
+          </span>
+          <span className="text-xs text-vibe-text-muted">{period}</span>
+        </div>
+      )}
     </div>
   )
 }

@@ -201,7 +201,7 @@ function SummaryTab() {
         <ReportCard icon={<Play        className="h-5 w-5 text-vibe-red"    />} iconBg="bg-vibe-red/15"    label="Total Plays"       value="1,245,000" sub="All time track plays across the platform" />
         <ReportCard icon={<Users       className="h-5 w-5 text-green-400"  />} iconBg="bg-green-500/15"  label="Active Users"      value="32,100"    sub="Users active in the last 30 days" />
         <ReportCard icon={<Upload      className="h-5 w-5 text-vibe-amber" />} iconBg="bg-vibe-amber/15" label="Tracks uploaded"   value="8,420"     sub="Total tracks uploaded by artists" />
-        <ReportCard icon={<DollarSign  className="h-5 w-5 text-purple-400" />} iconBg="bg-purple-500/15" label="Revenue"           value="$54,200"   sub="Gross revenue this month" />
+        <ReportCard icon={<DollarSign  className="h-5 w-5 text-purple-400" />} iconBg="bg-purple-500/15" label="Revenue"           value="₦54,200"   sub="Gross revenue this month" />
       </div>
 
       <DayWithMostPlays />
@@ -352,9 +352,9 @@ function RevenueTab() {
   return (
     <div className="space-y-5">
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <ReportCard icon={<DollarSign  className="h-5 w-5 text-vibe-amber" />} iconBg="bg-vibe-amber/15" label="Total Revenue"       value="$1,250,000" sub="All time earnings" />
-        <ReportCard icon={<TrendingUp  className="h-5 w-5 text-green-400"  />} iconBg="bg-green-500/15" label="This Month"           value="$98,400"    sub="Revenue in June" />
-        <ReportCard icon={<Music2      className="h-5 w-5 text-purple-400" />} iconBg="bg-purple-500/15" label="Top Earning Track"   value="Blinding Lights" sub="$12,300 earned" />
+        <ReportCard icon={<DollarSign  className="h-5 w-5 text-vibe-amber" />} iconBg="bg-vibe-amber/15" label="Total Revenue"       value="₦1,250,000" sub="All time earnings" />
+        <ReportCard icon={<TrendingUp  className="h-5 w-5 text-green-400"  />} iconBg="bg-green-500/15" label="This Month"           value="₦98,400"    sub="Revenue in June" />
+        <ReportCard icon={<Music2      className="h-5 w-5 text-purple-400" />} iconBg="bg-purple-500/15" label="Top Earning Track"   value="Blinding Lights" sub="₦12,300 earned" />
       </div>
       <TopTracksTable />
     </div>

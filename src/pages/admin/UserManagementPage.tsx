@@ -30,7 +30,7 @@ interface UserRow {
 // ── Mock data ─────────────────────────────────────────────
 const STATS = [
   { label: "Total Artists",        value: "270.7M", change: 14,    icon: <Users      className="h-5 w-5 text-vibe-amber"  /> },
-  { label: "Total Earnings",       value: "$10.5M", change: 25,    icon: <DollarSign className="h-5 w-5 text-green-400"   /> },
+  { label: "Total Earnings",       value: "₦10.5M", change: 25,    icon: <DollarSign className="h-5 w-5 text-green-400"   /> },
   { label: "Total Listeners",      value: "298.7K", change: -0.41, icon: <Users      className="h-5 w-5 text-vibe-red"    /> },
   { label: "Pending verification", value: "12",     change: 8,     icon: <Clock      className="h-5 w-5 text-purple-400"  /> },
 ]
@@ -59,7 +59,7 @@ const SELECTED_USER = {
   followers:    521,
   avatarUrl:    "https://picsum.photos/seed/alexturner/64/64",
   totalTracks2: 16,
-  totalEarnings:"$275K",
+  totalEarnings:"₦275K",
   totalWithdrawal: 2,
   pendingWithdrawal: 0,
 }

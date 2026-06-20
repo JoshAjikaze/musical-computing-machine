@@ -8,7 +8,7 @@ import { StatCard } from "@/components/app/StatCard"
 // ── Mock data (matches design values) ────────────────────
 const STATS = [
   { label: "Total Artists",   value: "270.7M", change: 14,   icon: <Users       className="h-5 w-5 text-vibe-amber"   /> },
-  { label: "Total Earnings",  value: "$10.5M", change: 25,   icon: <DollarSign  className="h-5 w-5 text-green-400"    /> },
+  { label: "Total Earnings",  value: "₦10.5M", change: 25,   icon: <DollarSign  className="h-5 w-5 text-green-400"    /> },
   { label: "Total Listeners", value: "298.7K", change: -0.41,icon: <Headphones  className="h-5 w-5 text-vibe-red"     /> },
   { label: "New Signups",     value: "131.7M", change: 8,    icon: <UserPlus    className="h-5 w-5 text-purple-400"   /> },
 ]
@@ -30,9 +30,9 @@ const STREAMED_TRACKS = [
 ]
 
 const TRANSACTIONS = [
-  { date: "Mar 20", user: "vdeeze",  item: "Subscription",  amount: "$9.99"  },
-  { date: "Mar 20", user: "jsmith",  item: "Track purchase", amount: "$1.99"  },
-  { date: "Mar 19", user: "mlee",    item: "Album purchase", amount: "$12.99" },
+  { date: "Mar 20", user: "vdeeze",  item: "Subscription",  amount: "₦9.99"  },
+  { date: "Mar 20", user: "jsmith",  item: "Track purchase", amount: "₦1.99"  },
+  { date: "Mar 19", user: "mlee",    item: "Album purchase", amount: "₦12.99" },
 ]
 
 const GENRE_DATA = [

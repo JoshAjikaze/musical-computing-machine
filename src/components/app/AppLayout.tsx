@@ -66,7 +66,7 @@ export function AppLayout() {
                 onClick={() => setEarningsOpen((v) => !v)}
                 className="flex items-center gap-2 px-4 h-10 rounded-md border border-vibe-onyx-400 bg-vibe-onyx-200 text-sm font-medium text-white hover:bg-vibe-onyx-300 transition-colors"
               >
-                <DollarSign className="h-4 w-4 text-vibe-text-muted" />
+                <p className="font-semibold text-vibe-rose-light">₦</p>
                 <span>0</span>
                 <ChevronDown className={cn("h-4 w-4 text-vibe-text-muted transition-transform", earningsOpen && "rotate-180")} />
               </button>

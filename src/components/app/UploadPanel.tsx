@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import {
-  ArrowLeft, X, Pencil, CalendarDays, DollarSign, Plus, Trash2,
+  ArrowLeft, X, Pencil, CalendarDays, Plus, Trash2,
   Music2, Upload, FolderOpen, AlertCircle, CheckCircle2, Loader2,
 } from "lucide-react"
 import { AnimatePresence, motion } from "framer-motion"
@@ -807,7 +807,7 @@ function AlbumTracksForm({
                       <FormControl>
                         <Input
                           placeholder="0.00"
-                          icon={<DollarSign className="h-4 w-4" />}
+                          icon={<span className="text-sm font-semibold leading-none">₦</span>}
                           {...field}
                         />
                       </FormControl>
@@ -1134,8 +1134,8 @@ function Single2Form({
         <p className="text-sm font-medium text-vibe-text-secondary">Upload Track</p>
         <FileDropzone
           accept=".mp3,.wav,.m4a"
-          hint="MP3, WAV or M4A – Max file size 50MB"
-          maxSizeMB={50}
+          hint="MP3, WAV or M4A – Max file size 10MB"
+          maxSizeMB={10}
           value={audioFile}
           onChange={(f) => { setAudioFile(f); if (f) setAudioError("") }}
           type="audio"

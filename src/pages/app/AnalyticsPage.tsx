@@ -29,11 +29,11 @@ export function AnalyticsPage() {
   const totalEarnings  = formatCurrency(0);
 
   const STATS = [
-    { label: "Total Streams",   value: `${totalStreams}`,   change: 16,   icon: <TrendingUp className="h-5 w-5 text-purple-400" /> },
-    { label: "Total Likes",     value: `${totalLikes}`,     change: 4,    icon: <Heart      className="h-5 w-5 text-vibe-red fill-vibe-red" /> },
-    { label: "Total Tracks",    value: `${totalTracks}`,    change: 2,    icon: <Music      className="h-5 w-5 text-green-400" /> },
-    { label: "Followers",       value: `${totalfollowers}`, change: 8,    icon: <Users      className="h-5 w-5 text-orange-400" /> },
-    { label: "Earnings",        value: `${totalEarnings}`,  change: 2,    icon: <Wallet     className="h-5 w-5 text-green-400" /> },
+    { label: "Total Streams",   value: `${totalStreams}`,   icon: <TrendingUp className="h-5 w-5 text-purple-400" /> },
+    { label: "Total Likes",     value: `${totalLikes}`,     icon: <Heart      className="h-5 w-5 text-vibe-red fill-vibe-red" /> },
+    { label: "Total Tracks",    value: `${totalTracks}`,    icon: <Music      className="h-5 w-5 text-green-400" /> },
+    { label: "Followers",       value: `${totalfollowers}`, icon: <Users      className="h-5 w-5 text-orange-400" /> },
+    { label: "Earnings",        value: `${totalEarnings}`,  icon: <Wallet     className="h-5 w-5 text-green-400" /> },
   ]
 
   const { data: rawTracks = [], isLoading: tracksLoading } = useGetMyTracksQuery()

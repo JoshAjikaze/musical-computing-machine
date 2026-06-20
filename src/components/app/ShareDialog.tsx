@@ -2,13 +2,8 @@
  * ShareDialog — Portal-based share sheet.
  *
  * Always shows two one-click copyable URL pills:
- *   • Artist profile → https://vibegarage.app/artist/{username}
- *   • Track          → https://vibegarage.app/track/{trackId}
- *
- * Artist URL resolution priority:
- *   1. artistUsername  (explicit username from API)
- *   2. artistId        (ID fallback when username unavailable)
- *   Both produce a valid shareable URL.
+ *   • Artist profile → {base_url}/listen/artist/{artist_id}
+ *   • Track          → {base_url}/listen/track/{track_id}
  */
 
 import { useState, useEffect } from "react"
@@ -25,11 +20,11 @@ import { useGetArtistQrCodeQuery } from "@/store/api/vibeApi"
 // ── Constants ──────────────────────────────────────────────
 const BASE_URL = "https://vibegarage.app"
 
-export const artistShareUrl = (usernameOrId: string) =>
-  `${BASE_URL}/artist/${usernameOrId}`
+export const artistShareUrl = (artistId: string) =>
+  `${BASE_URL}/listen/artist/${artistId}`
 
 export const trackShareUrl = (trackId: string) =>
-  `${BASE_URL}/track/${trackId}`
+  `${BASE_URL}/listen/track/${trackId}`
 
 // ── Types ──────────────────────────────────────────────────
 export interface ShareDialogProps {
@@ -40,18 +35,17 @@ export interface ShareDialogProps {
   label: string
   sublabel?: string
   /**
-   * Preferred: exact username from backend.
-   * Used for the artist URL pill AND the QR code tab.
-   * e.g. "chaleedip" → https://vibegarage.app/artist/chaleedip
+   * Used only to enable the QR Code tab — the QR endpoint requires a
+   * username (GET /public/artists/{username}/qrcode). Does NOT affect
+   * the artist share URL, which is always built from artistId.
    */
   artistUsername?: string
   /**
-   * Fallback when artistUsername is unavailable.
-   * e.g. "uuid-abc-123" → https://vibegarage.app/artist/uuid-abc-123
-   * QR tab is hidden when only artistId is available (no username endpoint).
+   * Artist ID — drives the artist share URL:
+   * {base_url}/listen/artist/{artist_id}
    */
   artistId?: string
-  /** Track ID → https://vibegarage.app/track/{trackId} */
+  /** Track ID → {base_url}/listen/track/{track_id} */
   trackId?: string
 }
 
@@ -152,12 +146,12 @@ export function ShareDialog({
     return () => { document.body.style.overflow = "" }
   }, [open])
 
-  // Resolve the best available artist identifier for URL + social sharing
-  const artistSlug = artistUsername || artistId || null
-  const artistUrl  = artistSlug ? artistShareUrl(artistSlug) : null
-  const trackUrl   = trackId    ? trackShareUrl(trackId)     : null
+  // Artist share URL is always built from artistId per spec:
+  // {base_url}/listen/artist/{artist_id}
+  const artistUrl = artistId ? artistShareUrl(artistId) : null
+  const trackUrl  = trackId  ? trackShareUrl(trackId)   : null
 
-  // QR tab only available when we have an actual username (not just an ID)
+  // QR tab only available when we have an actual username (QR endpoint requires one)
   const hasQr = !!artistUsername
 
   // Primary URL for social share buttons — prefer artist, fall back to track
