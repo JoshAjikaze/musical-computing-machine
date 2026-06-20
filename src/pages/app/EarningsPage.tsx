@@ -31,6 +31,12 @@ const EMPTY_CHART_DATA = [
   { month: "Apr", Earnings: 0 },
   { month: "May", Earnings: 0 },
   { month: "Jun", Earnings: 0 },
+  { month: "Jul", Earnings: 0 },
+  { month: "Aug", Earnings: 0 },
+  { month: "Sep", Earnings: 0 },
+  { month: "Oct", Earnings: 0 },
+  { month: "Nov", Earnings: 0 },
+  { month: "Dec", Earnings: 0 },
 ]
 
 // ── Page ──────────────────────────────────────────────────
