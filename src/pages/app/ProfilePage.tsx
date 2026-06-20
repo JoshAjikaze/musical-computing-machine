@@ -2,7 +2,7 @@ import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
-import { ChevronRight, Lock, Shield, Clock, Eye, EyeOff, ArrowLeft, X, Info } from "lucide-react"
+import { ChevronRight, Lock, Shield, Clock, Eye, EyeOff, ArrowLeft, X, Info, Bell, BellOff } from "lucide-react"
 import { AnimatePresence, motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -16,6 +16,7 @@ import {
 import { OTPInput, useCountdown } from "@/components/features/auth/OTPInput"
 import { AmberTrophyIllustration } from "@/components/app/AmberTrophyIllustration"
 import { useAppSelector } from "@/hooks/redux"
+import { usePushNotifications } from "@/hooks/usePushNotifications"
 import { cn } from "@/lib/utils"
 
 // ── Sub-tab types ─────────────────────────────────────────
@@ -150,6 +151,7 @@ const generalSchema = z.object({
 function GeneralSettings() {
   const { user } = useAppSelector((s) => s.auth)
   const [saved, setSaved] = useState(false)
+  const push = usePushNotifications()
 
   const form = useForm<z.infer<typeof generalSchema>>({
     resolver: zodResolver(generalSchema),
@@ -215,6 +217,34 @@ function GeneralSettings() {
           </Button>
         </form>
       </Form>
+
+      {/* Push notifications */}
+      <div className="mt-8 pt-6 border-t border-vibe-onyx-400">
+        <h3 className="text-sm font-medium text-vibe-text-secondary mb-3">Notifications</h3>
+        <div
+          className={cn(
+            "flex items-center justify-between w-full px-4 py-3.5 rounded-md border border-vibe-onyx-400 bg-vibe-onyx-300"
+          )}
+        >
+          <div className="flex items-center gap-3 text-vibe-text-secondary min-w-0">
+            {push.isSubscribed ? <Bell className="h-4 w-4 shrink-0" /> : <BellOff className="h-4 w-4 shrink-0" />}
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-white leading-tight">Push notifications</p>
+              <p className="text-xs text-vibe-text-muted truncate">
+                {push.isSupported
+                  ? "New releases, followers, and activity"
+                  : "Not supported on this browser"}
+              </p>
+            </div>
+          </div>
+          <Toggle
+            checked={push.isSubscribed}
+            onChange={push.toggle}
+            disabled={!push.isSupported || push.isChecking || push.isLoading}
+            aria-label="Toggle push notifications"
+          />
+        </div>
+      </div>
     </div>
   )
 }

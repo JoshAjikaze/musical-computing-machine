@@ -414,6 +414,21 @@ export const vibeApi = createApi({
       }),
     }),
 
+    // ── Web Push ───────────────────────────────────────────────────
+    // NOTE: these endpoint paths are not in the OpenAPI spec this file was
+    // generated from — push notifications are a new capability and the
+    // backend needs a matching route before these will work. Adjust the
+    // URLs/body shape here once that's confirmed; the frontend subscribe
+    // flow (src/lib/push.ts) is backend-agnostic and won't need to change.
+    /** POST /notifications/subscribe  body: { endpoint, keys: { p256dh, auth } } */
+    subscribePush: b.mutation<unknown, { endpoint: string; keys: { p256dh: string; auth: string } }>({
+      query: (body) => ({ url: '/notifications/subscribe', method: 'POST', body }),
+    }),
+    /** POST /notifications/unsubscribe  body: { endpoint } */
+    unsubscribePush: b.mutation<unknown, { endpoint: string }>({
+      query: (body) => ({ url: '/notifications/unsubscribe', method: 'POST', body }),
+    }),
+
     upgradeToArtist: b.mutation<unknown, { stage_name: string; bio?: string | null }>({
       query: (body) => ({ url: '/account/upgrade-to-artist', method: 'POST', body }),
       invalidatesTags: ['User'],
@@ -603,6 +618,7 @@ export const {
   useGetAccountOverviewQuery, useUpdateProfileMutation, useUploadAvatarMutation,
   useChangePasswordMutation, useDeactivateAccountMutation,
   useUpdateSocialsMutation, useUpdatePreferencesMutation, useUpgradeToArtistMutation,
+  useSubscribePushMutation, useUnsubscribePushMutation,
   useGetArtistDashboardQuery, useGetArtistPremiumDashboardQuery,
   useUploadTrackArtistMutation, useGetArtistStatsQuery,
   useGetArtistProfileQuery, useFollowArtistMutation,

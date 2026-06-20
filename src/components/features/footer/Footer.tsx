@@ -1,17 +1,13 @@
+import { useState } from "react"
 import { Link } from "react-router-dom"
 import { Linkedin, Facebook, Instagram, Twitter } from "lucide-react"
 import { VibeGarageLogo } from "@/components/ui/logo"
+import { InstallAppDialog } from "@/components/app/InstallAppDialog"
 
-const FOOTER_LINKS = {
-  Product: [
-    { label: "Download", href: "/download" },
-    { label: "Support",  href: "/support" },
-  ],
-  Company: [
-    { label: "Privacy", href: "/privacy" },
-    { label: "Careers", href: "/careers" },
-  ],
-}
+const COMPANY_LINKS = [
+  { label: "Privacy", href: "/privacy" },
+  { label: "Careers", href: "/careers" },
+]
 
 const SOCIAL_LINKS = [
   { icon: WhatsAppIcon, href: "https://wa.me", label: "WhatsApp" },
@@ -23,6 +19,8 @@ const SOCIAL_LINKS = [
 ]
 
 export function Footer() {
+  const [installOpen, setInstallOpen] = useState(false)
+
   return (
     <footer id="footer" className="relative bg-vibe-onyx border-t border-vibe-onyx-400/40">
       <div className="container mx-auto px-4 md:px-6 py-12 md:py-16">
@@ -34,25 +32,43 @@ export function Footer() {
 
           {/* Link columns */}
           <div className="flex gap-16 md:gap-24 order-3 md:order-2">
-            {Object.entries(FOOTER_LINKS).map(([category, links]) => (
-              <div key={category}>
-                <h4 className="font-heading text-sm font-semibold text-vibe-amber mb-4">
-                  {category}
-                </h4>
-                <ul className="space-y-2.5">
-                  {links.map((link) => (
-                    <li key={link.href}>
-                      <Link
-                        to={link.href}
-                        className="text-sm text-white hover:text-vibe-text-secondary transition-colors duration-150"
-                      >
-                        {link.label}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+            <div>
+              <h4 className="font-heading text-sm font-semibold text-vibe-amber mb-4">Product</h4>
+              <ul className="space-y-2.5">
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => setInstallOpen(true)}
+                    className="text-sm text-white hover:text-vibe-text-secondary transition-colors duration-150"
+                  >
+                    Download
+                  </button>
+                </li>
+                <li>
+                  <Link
+                    to="/support"
+                    className="text-sm text-white hover:text-vibe-text-secondary transition-colors duration-150"
+                  >
+                    Support
+                  </Link>
+                </li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-heading text-sm font-semibold text-vibe-amber mb-4">Company</h4>
+              <ul className="space-y-2.5">
+                {COMPANY_LINKS.map((link) => (
+                  <li key={link.href}>
+                    <Link
+                      to={link.href}
+                      className="text-sm text-white hover:text-vibe-text-secondary transition-colors duration-150"
+                    >
+                      {link.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
 
           {/* Connect + copyright */}
@@ -80,6 +96,8 @@ export function Footer() {
           </div>
         </div>
       </div>
+
+      <InstallAppDialog open={installOpen} onClose={() => setInstallOpen(false)} />
     </footer>
   )
 }

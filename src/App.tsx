@@ -31,6 +31,7 @@ import { ReportsAnalyticsPage } from "./pages/admin/ReportsAnalyticsPage"
 import { ContentModerationPage } from "./pages/admin/ContentModerationPage"
 import { Toaster } from "./components/ui/sonner"
 import { AudioEngine } from "./components/app/AudioEngine"
+import { PWAUpdatePrompt } from "./components/app/PWAUpdatePrompt"
 import { ProtectedRoute } from "./components/auth/ProtectedRoute"
 
 const AUTH_ROUTES = ["/login", "/join", "/verify", "/forgot-password"]
@@ -57,6 +58,7 @@ function App() {
           <BrowserRouter>
             <Layout />
             <AudioEngine />
+            <PWAUpdatePrompt />
             <Toaster />
             <Routes>
               {/* Public */}

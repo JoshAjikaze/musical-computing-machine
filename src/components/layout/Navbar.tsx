@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom"
 import { Menu, X } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { VibeGarageLogo } from "@/components/ui/logo"
+import { InstallAppDialog } from "@/components/app/InstallAppDialog"
 import { useAppSelector } from "@/hooks/redux"
 import { cn } from "@/lib/utils"
 
@@ -12,8 +13,8 @@ import { cn } from "@/lib/utils"
  * to match the marketing site design: logo + Download/FAQ links.
  */
 const NAV_LINKS = [
-  { label: "Download", href: "#footer" },
-  { label: "FAQ",       href: "#faq" },
+  { label: "Download", action: "install" as const },
+  { label: "FAQ",       action: "scroll" as const, href: "#faq" },
 ]
 
 export function Navbar() {
@@ -22,6 +23,7 @@ export function Navbar() {
   const { isAuthenticated } = useAppSelector((s) => s.auth)
   const [isScrolled, setIsScrolled]   = useState(false)
   const [mobileOpen, setMobileOpen]   = useState(false)
+  const [installOpen, setInstallOpen] = useState(false)
 
   useEffect(() => {
     const onScroll = () => setIsScrolled(window.scrollY > 20)
@@ -31,12 +33,12 @@ export function Navbar() {
 
   useEffect(() => { setMobileOpen(false) }, [location.pathname])
 
-  const handleNavClick = (href: string) => {
+  const handleNavClick = (link: (typeof NAV_LINKS)[number]) => {
     setMobileOpen(false)
-    if (href.startsWith("#")) {
-      document.querySelector(href)?.scrollIntoView({ behavior: "smooth" })
-    } else {
-      navigate(href)
+    if (link.action === "install") {
+      setInstallOpen(true)
+    } else if (link.href) {
+      document.querySelector(link.href)?.scrollIntoView({ behavior: "smooth" })
     }
   }
 
@@ -60,7 +62,7 @@ export function Navbar() {
             {NAV_LINKS.map((link) => (
               <button
                 key={link.label}
-                onClick={() => handleNavClick(link.href)}
+                onClick={() => handleNavClick(link)}
                 className="text-sm font-body font-medium text-white hover:text-vibe-text-secondary transition-colors"
               >
                 {link.label}
@@ -104,7 +106,7 @@ export function Navbar() {
                   initial={{ opacity: 0, x: -12 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: i * 0.05 }}
-                  onClick={() => handleNavClick(link.href)}
+                  onClick={() => handleNavClick(link)}
                   className="block w-full text-left px-2 py-3 text-base font-body font-medium text-white hover:text-vibe-text-secondary transition-colors"
                 >
                   {link.label}
@@ -122,6 +124,8 @@ export function Navbar() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <InstallAppDialog open={installOpen} onClose={() => setInstallOpen(false)} />
     </>
   )
 }
