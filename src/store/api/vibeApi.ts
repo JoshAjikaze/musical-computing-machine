@@ -146,6 +146,18 @@ export interface ArtistPaymentSettingsResponse extends ArtistPaymentSettingsCrea
 }
 
 
+/**
+ * GET /playlists/my-favorites response — the "Liked music" auto-playlist
+ * shown in the listener sidebar. Sample response had `tracks: []`, so the
+ * item shape inside isn't confirmed; assuming TrackOut since that's what
+ * every other track-bearing endpoint in this file returns.
+ */
+export interface MyFavoritesOut {
+  name: string
+  cover_image: string
+  tracks: TrackOut[]
+}
+
 export interface NEW_RELEASES {
   id: string
   cover_path: string
@@ -529,6 +541,14 @@ export const vibeApi = createApi({
       query: () => '/playlists/me',
       providesTags: ['Playlist'],
     }),
+    // GET /playlists/my-favorites — "Liked music" in the sidebar. Tagged
+    // 'Track' (not 'Playlist') so liking/unliking a track anywhere in the
+    // app — which invalidates 'Track' — automatically refetches this too,
+    // keeping the sidebar count and the Liked Music page in sync.
+    getMyFavorites: b.query<MyFavoritesOut, void>({
+      query: () => '/playlists/my-favorites',
+      providesTags: ['Track'],
+    }),
     // GET /playlists/{playlist_id}
     getPlaylistDetails: b.query<unknown, string>({
       query: (playlist_id) => `/playlists/${playlist_id}`,
@@ -649,7 +669,7 @@ export const {
   useBulkUploadAlbumMutation,
   useGetListenerDashboardQuery, useGetLikedTracksQuery, useGetLikesQuery,
   useGetFollowingArtistsQuery, useGetRecentlyPlayedQuery, useGetListeningHistoryQuery,
-  useCreatePlaylistMutation, useGetMyPlaylistsQuery,
+  useCreatePlaylistMutation, useGetMyPlaylistsQuery, useGetMyFavoritesQuery,
   useGetPlaylistDetailsQuery, useUploadPlaylistCoverMutation,
   useAddTrackToPlaylistApiMutation, useRemoveTrackFromPlaylistApiMutation,
   useGetLandingPageDataQuery, useGetDiscoveryTrendingQuery,

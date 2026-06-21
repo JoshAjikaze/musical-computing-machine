@@ -22,6 +22,7 @@ import { UserExplorePage } from "./pages/user/UserExplorePage"
 import { CollectionPage } from "./pages/user/CollectionPage"
 import { AfrobeatMixesPage } from "./pages/user/AfrobeatMixesPage"
 import { PopularArtistsPage } from "./pages/user/PopularArtistsPage"
+import { LikedMusicPage } from "./pages/user/LikedMusicPage"
 import { UserLibraryPage } from "./pages/user/UserLibraryPage"
 import { NowPlayingPage } from "./pages/user/NowPlayingPage"
 import { ArtistProfilePage } from "./pages/user/ArtistProfilePage"
@@ -115,6 +116,7 @@ function App() {
               <Route path="collection/:section" element={<Page><CollectionPage /></Page>} />
               <Route path="afrobeat-mixes" element={<Page><AfrobeatMixesPage /></Page>} />
               <Route path="popular-artists" element={<Page><PopularArtistsPage /></Page>} />
+              <Route path="liked" element={<Page><LikedMusicPage /></Page>} />
               <Route path="support" element={<Page><SupportPage /></Page>} />
             </Route>
 

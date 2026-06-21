@@ -7,6 +7,7 @@ import { PlayerBar } from "@/components/app/PlayerBar"
 import { QueuePanel } from "@/components/app/QueuePanel"
 import { CreatePlaylistDialog } from "@/components/app/CreatePlaylistDialog"
 import { useAppSelector } from "@/hooks/redux"
+import { useGetMyFavoritesQuery } from "@/store/api/vibeApi"
 import { AvatarDropdown } from "@/components/app/AvatarDropdown"
 import { cn } from "@/lib/utils"
 
@@ -26,6 +27,8 @@ function SidebarContent({
 }) {
   const location = useLocation()
   const playlists = useAppSelector((s) => s.playlists.playlists)
+  const { data: favorites } = useGetMyFavoritesQuery()
+  const likedCount = favorites?.tracks.length ?? 0
 
   const isActive = (href: string) =>
     href === "/listen" ? location.pathname === "/listen" : location.pathname.startsWith(href)
@@ -76,9 +79,12 @@ function SidebarContent({
 
       {/* Liked music — always present */}
       <Link
-        to="/listen/library"
+        to="/listen/liked"
         onClick={onClose}
-        className="flex items-center gap-3 px-4 py-2.5 rounded-md hover:bg-vibe-onyx-300/50 transition-colors group mx-1 mb-1"
+        className={cn(
+          "flex items-center gap-3 px-4 py-2.5 rounded-md hover:bg-vibe-onyx-300/50 transition-colors group mx-1 mb-1",
+          isActive("/listen/liked") && "bg-vibe-onyx-300"
+        )}
       >
         <div className="h-7 w-7 rounded-sm bg-gradient-to-br from-vibe-purple to-vibe-red flex items-center justify-center shrink-0">
           <Heart className="h-3.5 w-3.5 text-white fill-white" />
@@ -87,7 +93,9 @@ function SidebarContent({
           <p className="text-sm font-medium text-vibe-text-secondary group-hover:text-white transition-colors truncate">
             Liked music
           </p>
-          <p className="text-[10px] text-vibe-text-muted">Auto playlist</p>
+          <p className="text-[10px] text-vibe-text-muted">
+            {likedCount} {likedCount === 1 ? "track" : "tracks"}
+          </p>
         </div>
       </Link>
 
