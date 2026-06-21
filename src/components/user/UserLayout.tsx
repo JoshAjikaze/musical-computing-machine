@@ -147,13 +147,22 @@ function SidebarContent({
 export function UserLayout() {
   const [mobileOpen, setMobileOpen]         = useState(false)
   const [createPlaylistOpen, setCreatePlaylistOpen] = useState(false)
+  const location = useLocation()
+
+  // Now Playing is a fullscreen takeover (its own back control, like a
+  // mobile player sheet) — sidebar, topbar, and the floating PlayerBar all
+  // hide so its own controls are the only player UI on screen and it can
+  // actually fill the viewport instead of just the area below the topbar.
+  const isNowPlaying = location.pathname === "/listen/now-playing"
 
   return (
     <div className="flex h-screen overflow-hidden bg-vibe-onyx">
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex flex-col w-56 shrink-0 border-r border-vibe-onyx-400 bg-vibe-onyx-100 h-screen overflow-y-auto">
-        <SidebarContent onNewPlaylist={() => setCreatePlaylistOpen(true)} />
-      </aside>
+      {!isNowPlaying && (
+        <aside className="hidden md:flex flex-col w-56 shrink-0 border-r border-vibe-onyx-400 bg-vibe-onyx-100 h-screen overflow-y-auto">
+          <SidebarContent onNewPlaylist={() => setCreatePlaylistOpen(true)} />
+        </aside>
+      )}
 
       {/* Mobile drawer */}
       <AnimatePresence>
@@ -182,30 +191,32 @@ export function UserLayout() {
       {/* Main */}
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
         {/* Topbar */}
-        <header className="sticky top-0 z-20 flex items-center gap-3 px-4 md:px-6 h-16 bg-vibe-onyx border-b border-vibe-onyx-400">
-          <button className="md:hidden text-vibe-text-secondary hover:text-white transition-colors"
-            onClick={() => setMobileOpen(true)}>
-            <Menu className="h-6 w-6" />
-          </button>
+        {!isNowPlaying && (
+          <header className="sticky top-0 z-20 flex items-center gap-3 px-4 md:px-6 h-16 bg-vibe-onyx border-b border-vibe-onyx-400">
+            <button className="md:hidden text-vibe-text-secondary hover:text-white transition-colors"
+              onClick={() => setMobileOpen(true)}>
+              <Menu className="h-6 w-6" />
+            </button>
 
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-vibe-text-muted" />
-            <input type="text" placeholder="Search"
-              className="w-full h-9 pl-9 pr-4 rounded-full bg-vibe-onyx-300 border border-vibe-onyx-400 text-sm text-vibe-text-primary placeholder:text-vibe-text-muted focus:outline-none focus:border-vibe-text-muted transition-colors"
-            />
-          </div>
-
-          <div className="flex items-center gap-3 ml-auto">
-            <AvatarDropdown profileHref="/listen/profile" logoutRedirect="/login" />
-            <div className="flex items-center gap-1.5 px-3 h-8 rounded-full bg-vibe-onyx-300 border border-vibe-onyx-400 text-sm font-medium text-white">
-              <svg width="12" height="14" viewBox="0 0 12 14" fill="none"><path d="M7 1L1 8h5l-1 5 6-7H6l1-5z" fill="#F4A435" /></svg>
-              <span>0 Vcoins</span>
+            <div className="relative flex-1 max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-vibe-text-muted" />
+              <input type="text" placeholder="Search"
+                className="w-full h-9 pl-9 pr-4 rounded-full bg-vibe-onyx-300 border border-vibe-onyx-400 text-sm text-vibe-text-primary placeholder:text-vibe-text-muted focus:outline-none focus:border-vibe-text-muted transition-colors"
+              />
             </div>
-          </div>
-        </header>
+
+            <div className="flex items-center gap-3 ml-auto">
+              <AvatarDropdown profileHref="/listen/profile" logoutRedirect="/login" />
+              <div className="flex items-center gap-1.5 px-3 h-8 rounded-full bg-vibe-onyx-300 border border-vibe-onyx-400 text-sm font-medium text-white">
+                <svg width="12" height="14" viewBox="0 0 12 14" fill="none"><path d="M7 1L1 8h5l-1 5 6-7H6l1-5z" fill="#F4A435" /></svg>
+                <span>0 Vcoins</span>
+              </div>
+            </div>
+          </header>
+        )}
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto pb-[76px] min-h-0">
+        <main className={cn("flex-1 min-h-0 overflow-y-auto", !isNowPlaying && "pb-[76px]")}>
           <Outlet />
         </main>
       </div>
@@ -214,9 +225,11 @@ export function UserLayout() {
       <QueuePanel />
 
       {/* Player bar */}
-      <div className="fixed bottom-0 left-0 md:left-56 right-0 z-30">
-        <PlayerBar />
-      </div>
+      {!isNowPlaying && (
+        <div className="fixed bottom-0 left-0 md:left-56 right-0 z-30">
+          <PlayerBar />
+        </div>
+      )}
 
       {/* Create playlist dialog */}
       <CreatePlaylistDialog

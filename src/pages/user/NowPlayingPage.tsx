@@ -138,7 +138,7 @@ export function NowPlayingPage() {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 30 }}
       transition={{ duration: 0.35, ease: [0.32, 0, 0.17, 1] }}
-      className="relative flex flex-col min-h-screen bg-vibe-onyx overflow-hidden"
+      className="relative flex flex-col min-h-full bg-vibe-onyx overflow-hidden"
     >
       {/* ── Ambient background blur from cover art ── */}
       <AnimatePresence mode="wait">
