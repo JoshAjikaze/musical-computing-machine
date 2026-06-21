@@ -561,7 +561,12 @@ export const vibeApi = createApi({
 
     // ── Discovery & Trending ──────────────────────────────────────
     getLandingPageData: b.query<unknown, { limit?: number }>({ query: ({ limit = 10 }) => `/trending/landing-page?limit=${limit}` }),
-    getDiscoveryTrending: b.query<unknown, { limit?: number }>({ query: ({ limit = 10 }) => `/discovery/trending?limit=${limit}`, providesTags: ['Track'] }),
+    // Was typed `unknown` — giving it the same shape as getNewReleases below
+    // since both live under /discovery/ and are almost certainly served by
+    // the same serializer. Flagging this as an assumption, not a confirmed
+    // contract: if the real response differs, normaliseNewRelease() (reused
+    // for this in CollectionPage) is the one place that needs adjusting.
+    getDiscoveryTrending: b.query<NEW_RELEASES[], { limit?: number }>({ query: ({ limit = 10 }) => `/discovery/trending?limit=${limit}`, providesTags: ['Track'] }),
     getNewReleases: b.query<[NEW_RELEASES], { limit?: number }>({ query: ({ limit = 10 }) => `/discovery/new-releases?limit=${limit}`, providesTags: ['Track'] }),
     getGarageFeed: b.query<unknown, { limit?: number }>({ query: ({ limit = 20 }) => `/discovery/feed?limit=${limit}` }),
     getDailyMix: b.query<unknown, void>({ query: () => '/daily-mix/' }),

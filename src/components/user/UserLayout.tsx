@@ -191,7 +191,7 @@ export function UserLayout() {
             <AvatarDropdown profileHref="/listen/profile" logoutRedirect="/login" />
             <div className="flex items-center gap-1.5 px-3 h-8 rounded-full bg-vibe-onyx-300 border border-vibe-onyx-400 text-sm font-medium text-white">
               <svg width="12" height="14" viewBox="0 0 12 14" fill="none"><path d="M7 1L1 8h5l-1 5 6-7H6l1-5z" fill="#F4A435" /></svg>
-              <span>12,678 Vcoins</span>
+              <span>0 Vcoins</span>
             </div>
           </div>
         </header>

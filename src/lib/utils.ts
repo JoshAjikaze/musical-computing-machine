@@ -25,3 +25,15 @@ export function assetUrl(path: string | null | undefined): string {
   if (path.startsWith("http://") || path.startsWith("https://")) return path
   return SUPABASE_STORAGE_BASE + path.replace(/^\//, "")
 }
+
+/**
+ * Best-effort username slug derived from an artist's display name, for use
+ * only when the backend hasn't given us a real `artist_username`. The
+ * public artist route (/artist/:username) needs a real username to resolve
+ * against GET /public/artists/{username} — this is a fallback guess, not a
+ * guarantee it'll match. Same heuristic that was previously duplicated
+ * inline in ShareDialog, TrackCard, and TrackPage; centralized here.
+ */
+export function slugifyArtistName(name: string): string {
+  return name.toLowerCase().replace(/\s+/g, "").replace(/[^a-z0-9_]/g, "")
+}

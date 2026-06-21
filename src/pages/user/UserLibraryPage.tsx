@@ -7,6 +7,7 @@ import { deletePlaylist, setActivePlaylist, removeTrackFromPlaylist } from "@/st
 import { playTrack } from "@/store/slices/playerSlice"
 import { useRemoveTrackFromPlaylistApiMutation } from "@/store/api/vibeApi"
 import { CreatePlaylistDialog } from "@/components/app/CreatePlaylistDialog"
+import { GetVCoinsButton } from "@/components/app/GetVCoinsButton"
 import { cn } from "@/lib/utils"
 import type { Playlist } from "@/store/slices/playlistSlice"
 import { toast } from "sonner"
@@ -30,9 +31,7 @@ export function UserLibraryPage() {
           <h1 className="font-heading text-2xl font-bold text-white">Library</h1>
           <p className="text-sm text-vibe-text-secondary mt-0.5">Your favourite songs are here</p>
         </div>
-        <Button size="default" rounded="full" className="shrink-0">
-          Get free V coins
-        </Button>
+        <GetVCoinsButton />
       </div>
 
       {/* Filter tabs */}
