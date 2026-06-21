@@ -1,6 +1,6 @@
 import { Provider } from "react-redux"
 import { PersistGate } from "redux-persist/integration/react"
-import { Routes, Route, Navigate, useLocation, HashRouter } from "react-router-dom"
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom"
 import { store, persistor } from "./store"
 import { ErrorBoundary, SectionErrorBoundary } from "./components/ui/error-boundary"
 import { Navbar } from "./components/layout/Navbar"
@@ -22,6 +22,8 @@ import { UserExplorePage } from "./pages/user/UserExplorePage"
 import { UserLibraryPage } from "./pages/user/UserLibraryPage"
 import { NowPlayingPage } from "./pages/user/NowPlayingPage"
 import { ArtistProfilePage } from "./pages/user/ArtistProfilePage"
+import { TrackPage } from "./pages/user/TrackPage"
+import { Footer } from "./components/features/footer/Footer"
 import { AdminLayout } from "./components/admin/AdminLayout"
 import { AdminDashboard } from "./pages/admin/AdminDashboard"
 import { UserManagementPage } from "./pages/admin/UserManagementPage"
@@ -55,7 +57,7 @@ function App() {
     <ErrorBoundary>
       <Provider store={store}>
         <PersistGate loading={null} persistor={persistor}>
-          <HashRouter>
+          <BrowserRouter>
             <Layout />
             <AudioEngine />
             <PWAUpdatePrompt />
@@ -63,6 +65,16 @@ function App() {
             <Routes>
               {/* Public */}
             <Route path="/"                element={<Page><LandingPage /></Page>} />
+
+            {/* Public share links — opened from ShareDialog's copyable URLs.
+                Deliberately NOT nested under /listen's ProtectedRoute: these
+                are what someone clicks from a tweet/DM/WhatsApp message
+                before they've ever signed in. ArtistProfilePage is reused
+                as-is from the protected /app and /listen trees too — its
+                Follow/Play actions self-gate via requireAuth() when there's
+                no session, rather than this route gating the whole page. */}
+            <Route path="/artist/:username" element={<Page><ArtistProfilePage /><Footer /></Page>} />
+            <Route path="/track/:trackId"   element={<Page><TrackPage /><Footer /></Page>} />
 
             {/* Auth */}
             <Route path="/login"           element={<Page><LoginPage /></Page>} />
@@ -118,7 +130,7 @@ function App() {
 
             <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
-          </HashRouter>
+          </BrowserRouter>
         </PersistGate>
       </Provider>
     </ErrorBoundary>

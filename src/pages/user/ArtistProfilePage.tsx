@@ -25,7 +25,7 @@ export function ArtistProfilePage() {
   const { username } = useParams<{ username: string }>()
   const navigate = useNavigate()
   const dispatch = useAppDispatch()
-  const { user } = useAppSelector((s) => s.auth)
+  const { user, isAuthenticated } = useAppSelector((s) => s.auth)
 
   const [tab, setTab]         = useState<Tab>("top_tracks")
   const [following, setFollowing] = useState(false)
@@ -38,14 +38,28 @@ export function ArtistProfilePage() {
 
   const isOwnProfile = user?.username === username
 
+  /** Used for actions that need an account — Follow, Play. Viewing and
+   *  sharing the profile itself never requires one (see /artist/:username
+   *  in App.tsx, a public route). */
+  function requireAuth(action: () => void) {
+    if (!isAuthenticated) {
+      toast.info("Sign in to continue")
+      navigate("/login")
+      return
+    }
+    action()
+  }
+
   async function handleFollow() {
     if (!profile?.id) return
-    try {
-      await followArtist(profile.id).unwrap()
-      setFollowing((v) => !v)
-    } catch {
-      toast.error("Could not follow artist")
-    }
+    requireAuth(async () => {
+      try {
+        await followArtist(profile.id).unwrap()
+        setFollowing((v) => !v)
+      } catch {
+        toast.error("Could not follow artist")
+      }
+    })
   }
 
   if (isLoading) return <ArtistProfileSkeleton />
@@ -151,7 +165,7 @@ export function ArtistProfilePage() {
             {/* Play all button */}
             {topTracks.length > 0 && (
               <button
-                onClick={() => dispatch(playTrack({ track: topTracks[0], queue: topTracks }))}
+                onClick={() => requireAuth(() => dispatch(playTrack({ track: topTracks[0], queue: topTracks })))}
                 className="h-10 w-10 rounded-full bg-vibe-red flex items-center justify-center shadow-lg hover:bg-vibe-red/90 active:scale-95 transition-all"
               >
                 <Play className="h-4 w-4 fill-white text-white ml-0.5" />
@@ -233,7 +247,7 @@ export function ArtistProfilePage() {
                       key={track.id}
                       rank={idx + 1}
                       track={track}
-                      onPlay={() => dispatch(playTrack({ track, queue: topTracks }))}
+                      onPlay={() => requireAuth(() => dispatch(playTrack({ track, queue: topTracks })))}
                     />
                   ))}
                 </div>

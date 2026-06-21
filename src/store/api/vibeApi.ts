@@ -472,6 +472,15 @@ export const vibeApi = createApi({
     likeTrack: b.mutation<unknown, string>({ query: (id) => ({ url: `/tracks/${id}/like`, method: 'POST' }), invalidatesTags: ['Track'] }),
     getLatestTracks: b.query<PublicTrackOut[], void>({ query: () => '/tracks/public/latest', providesTags: ['Track'] }),
     getTrendingTracks: b.query<PublicTrackOut[], void>({ query: () => '/tracks/public/trending', providesTags: ['Track'] }),
+    // NOTE: like subscribePush/unsubscribePush above, this path is not in the
+    // existing OpenAPI spec — there's currently no endpoint to fetch a single
+    // track's full public details by id (only list endpoints exist:
+    // /tracks/public/latest, /tracks/public/trending). /tracks/public/{id}
+    // follows that same naming convention and returns the existing TrackOut
+    // shape (so the rest of the app's track-rendering code — normaliseTrack,
+    // TrackRow, etc. — works unchanged), but needs backend confirmation.
+    /** GET /tracks/public/{track_id} */
+    getPublicTrack: b.query<TrackOut, string>({ query: (id) => `/tracks/public/${id}`, providesTags: ['Track'] }),
 
     // ── Albums ────────────────────────────────────────────────────
     /** POST /albums/create  multipart: { title, cover?, description?, year?, release_date? } */
@@ -626,7 +635,7 @@ export const {
   useRequestPayoutMutation, useGetMyPayoutsQuery,
   useUploadTrackMutation, useStreamTrackQuery, useDownloadTrackQuery,
   useGetMyTracksQuery, useLikeTrackMutation,
-  useGetLatestTracksQuery, useGetTrendingTracksQuery,
+  useGetLatestTracksQuery, useGetTrendingTracksQuery, useGetPublicTrackQuery,
   useCreateAlbumMutation,
   useAddTrackToAlbumMutation,
   useGetAlbumByIdQuery,

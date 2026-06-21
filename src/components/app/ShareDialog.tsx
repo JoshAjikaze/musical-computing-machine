@@ -2,8 +2,14 @@
  * ShareDialog — Portal-based share sheet.
  *
  * Always shows two one-click copyable URL pills:
- *   • Artist profile → {base_url}/listen/artist/{artist_id}
- *   • Track          → {base_url}/listen/track/{track_id}
+ *   • Artist profile → {base_url}/artist/{username}
+ *   • Track          → {base_url}/track/{track_id}
+ *
+ * Both routes are public (see App.tsx) — no login required to open a
+ * shared link. The artist link is keyed by *username*, not artistId:
+ * the only public artist-lookup endpoint (GET /public/artists/{username})
+ * takes a username, so an id-based link would have nothing to resolve it
+ * against.
  */
 
 import { useState, useEffect } from "react"
@@ -20,11 +26,11 @@ import { useGetArtistQrCodeQuery } from "@/store/api/vibeApi"
 // ── Constants ──────────────────────────────────────────────
 const BASE_URL = "https://vibegarage.app"
 
-export const artistShareUrl = (artistId: string) =>
-  `${BASE_URL}/listen/artist/${artistId}`
+export const artistShareUrl = (username: string) =>
+  `${BASE_URL}/artist/${username}`
 
 export const trackShareUrl = (trackId: string) =>
-  `${BASE_URL}/listen/track/${trackId}`
+  `${BASE_URL}/track/${trackId}`
 
 // ── Types ──────────────────────────────────────────────────
 export interface ShareDialogProps {
@@ -35,17 +41,18 @@ export interface ShareDialogProps {
   label: string
   sublabel?: string
   /**
-   * Used only to enable the QR Code tab — the QR endpoint requires a
-   * username (GET /public/artists/{username}/qrcode). Does NOT affect
-   * the artist share URL, which is always built from artistId.
+   * Drives the QR Code tab AND the artist share URL — the QR endpoint
+   * (GET /public/artists/{username}/qrcode) and the public artist page
+   * (GET /public/artists/{username}) both key off username, not artistId.
    */
   artistUsername?: string
   /**
-   * Artist ID — drives the artist share URL:
-   * {base_url}/listen/artist/{artist_id}
+   * Kept for callers that have it on hand (e.g. follow/like actions
+   * elsewhere) — not used to build the share URL, since the public artist
+   * route is username-based. See artistUsername.
    */
   artistId?: string
-  /** Track ID → {base_url}/listen/track/{track_id} */
+  /** Track ID → {base_url}/track/{track_id} */
   trackId?: string
 }
 
@@ -135,7 +142,6 @@ export function ShareDialog({
   label,
   sublabel,
   artistUsername,
-  artistId,
   trackId,
 }: ShareDialogProps) {
   const [tab, setTab] = useState<Tab>("link")
@@ -146,10 +152,10 @@ export function ShareDialog({
     return () => { document.body.style.overflow = "" }
   }, [open])
 
-  // Artist share URL is always built from artistId per spec:
-  // {base_url}/listen/artist/{artist_id}
-  const artistUrl = artistId ? artistShareUrl(artistId) : null
-  const trackUrl  = trackId  ? trackShareUrl(trackId)   : null
+  // Artist share URL is public and username-based:
+  // {base_url}/artist/{username} — see artistShareUrl() above.
+  const artistUrl = artistUsername ? artistShareUrl(artistUsername) : null
+  const trackUrl  = trackId        ? trackShareUrl(trackId)         : null
 
   // QR tab only available when we have an actual username (QR endpoint requires one)
   const hasQr = !!artistUsername

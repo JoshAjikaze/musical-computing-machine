@@ -42,3 +42,14 @@ export function formatPlays(plays: number | null | undefined): string {
   if (plays >= 1_000) return (plays / 1_000).toFixed(1) + "K";
   return plays.toString();
 }
+
+/**
+ * Format a duration in seconds as "m:ss" (e.g. 185 -> "3:05").
+ * Mirrors the formatTime() helpers already duplicated in PlayerBar.tsx,
+ * NowPlayingPage.tsx, and ExplorePage.tsx — pulled out here so new code
+ * (and those, whenever they're next touched) has one source of truth.
+ */
+export function formatDuration(seconds: number): string {
+  if (!isFinite(seconds) || isNaN(seconds)) return "0:00"
+  return `${Math.floor(seconds / 60)}:${Math.floor(seconds % 60).toString().padStart(2, "0")}`
+}
