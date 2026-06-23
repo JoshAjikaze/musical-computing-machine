@@ -479,11 +479,11 @@ function Step3({ wizard }: { wizard: WizardState }) {
                 </FormControl>
                 <FormLabel className="text-sm text-vibe-text-secondary font-normal leading-snug cursor-pointer">
                   I agree to Vibe Garage's{" "}
-                  <Link to="/privacy" className="text-vibe-amber hover:text-vibe-amber-light transition-colors">
+                  <Link to="/privacy-policy" className="text-vibe-amber hover:text-vibe-amber-light transition-colors">
                     Privacy Policy
                   </Link>
                   {" "}and{" "}
-                  <Link to="/terms" className="text-vibe-amber hover:text-vibe-amber-light transition-colors">
+                  <Link to="/termsandconditions" className="text-vibe-amber hover:text-vibe-amber-light transition-colors">
                     Terms of Use
                   </Link>
                 </FormLabel>

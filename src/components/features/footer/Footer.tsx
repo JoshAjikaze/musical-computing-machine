@@ -5,7 +5,7 @@ import { VibeGarageLogo } from "@/components/ui/logo"
 import { InstallAppDialog } from "@/components/app/InstallAppDialog"
 
 const COMPANY_LINKS = [
-  { label: "Privacy", href: "/privacy" },
+  { label: "Privacy", href: "/privacy-policy" },
   { label: "Careers", href: "/careers" },
 ]
 
@@ -45,12 +45,12 @@ export function Footer() {
                   </button>
                 </li>
                 <li>
-                  <Link
-                    to="/support"
+                  <a
+                    href="mailto:Hello@vibegarage.app"
                     className="text-sm text-white hover:text-vibe-text-secondary transition-colors duration-150"
                   >
                     Support
-                  </Link>
+                  </a>
                 </li>
               </ul>
             </div>

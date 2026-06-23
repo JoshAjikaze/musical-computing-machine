@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { Link, useNavigate } from "react-router-dom"
+import { Link, useNavigate, useLocation } from "react-router-dom"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -25,23 +25,36 @@ type FormValues = z.infer<typeof schema>
 export function LoginPage() {
   const dispatch   = useAppDispatch()
   const navigate   = useNavigate()
+  const location   = useLocation()
   const [login, { isLoading }] = useLoginMutation()
   const [showPassword, setShowPassword] = useState(false)
   const [accessToken, setAccessToken]   = useState<string | null>(null)
 
   // Once we have the access_token, fetch the full user profile
   const { data: meData } = useGetCurrentUserQuery(undefined, { skip: !accessToken })
- 
-  // When profile data arrives, commit to Redux and navigate by role
+
+  // When profile data arrives, commit to Redux and navigate by role.
+  // ProtectedRoute saves where the visitor was headed (state.from) before
+  // bouncing them here — e.g. after a session-expiry logout. Honor that
+  // first so they land back where they were, not always back at the
+  // dashboard root; fall back to the role default if there isn't one
+  // (a plain, unprompted visit to /login).
   useEffect(() => {
     if (meData && accessToken) {
       const user = normaliseUser(meData)
       dispatch(setCredentials({ user, token: accessToken }))
-      if (user.role === 'admin')       navigate('/admin',  { replace: true })
-      else if (user.role === 'artist') navigate('/app',    { replace: true })
-      else                             navigate('/listen', { replace: true })
+      const from = (location.state as { from?: Location })?.from
+      if (from) {
+        navigate(`${from.pathname}${from.search ?? ""}`, { replace: true })
+      } else if (user.role === 'admin') {
+        navigate('/admin', { replace: true })
+      } else if (user.role === 'artist') {
+        navigate('/app', { replace: true })
+      } else {
+        navigate('/listen', { replace: true })
+      }
     }
-  }, [meData, accessToken, dispatch, navigate])
+  }, [meData, accessToken, dispatch, navigate, location.state])
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),

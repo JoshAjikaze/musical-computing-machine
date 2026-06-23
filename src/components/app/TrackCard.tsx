@@ -101,9 +101,15 @@ export function TrackCard({
       case "share":
         setShareOpen(true)
         break
-      case "view_artist":
-        if (action.artistId) navigate(`/listen/artist/${track.artistUsername ?? action.artistId}`)
+      case "view_artist": {
+        // Prefer the real username slug — the artist profile page calls
+        // GET /public/artists/{username} which only accepts usernames, not
+        // UUIDs. artistId is kept as a last resort (it may not resolve, but
+        // it's better than navigating nowhere at all).
+        const dest = track.artistUsername ?? track.artistId
+        if (dest) navigate(`/listen/artist/${dest}`)
         break
+      }
     }
   }
 
@@ -111,6 +117,11 @@ export function TrackCard({
     <motion.div
       whileHover={{ y: -2 }}
       transition={{ duration: 0.18 }}
+      // onClick on the wrapper makes the whole card tappable on mobile where
+      // the hover-overlay play button is never visible. The play button and
+      // the ellipsis inside both call e.stopPropagation() so they still fire
+      // their own handlers on desktop without also triggering this.
+      onClick={onPlay}
       className={cn("group/card relative shrink-0 w-[160px] md:w-[180px] cursor-pointer", className)}
       style={{ scrollSnapAlign: "start" }}
     >
@@ -142,10 +153,12 @@ export function TrackCard({
             </button>
           </div>
 
-          {/* Ellipsis — top right */}
+          {/* Ellipsis — top right. Always visible on touch (no hover), positioned
+              at top-right so it doesn't overlap the play area. stopPropagation
+              prevents the card-level onClick from also firing. */}
           <button
             onClick={(e) => { e.stopPropagation(); setMenuOpen((v) => !v) }}
-            className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/70 transition-colors"
+            className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/70 transition-colors opacity-0 group-hover/card:opacity-100 active:opacity-100"
           >
             <MoreHorizontal className="h-3.5 w-3.5" />
           </button>
@@ -169,20 +182,30 @@ export function TrackCard({
             ))}
           </div>
         )}
+      </div>
 
-        {/* Track info */}
-        <div className="absolute bottom-0 left-0 right-0 px-3 py-2.5">
+      {/* Below-card row: title + artist + persistent menu button (touch-friendly) */}
+      <div className="flex items-start justify-between gap-1 px-0.5">
+        <div className="min-w-0">
           <p className={cn(
-            "font-heading text-sm font-bold uppercase tracking-wider truncate",
+            "font-heading text-xs font-bold uppercase tracking-wide truncate",
             isActive ? "text-vibe-red" : "text-white"
           )}>
             {track.title}
           </p>
-          <p className="text-xs text-white/70 truncate mt-0.5">{track.artist}</p>
+          <p className="text-[10px] text-vibe-text-muted truncate mt-0.5">{track.artist}</p>
         </div>
+        {/* Ellipsis outside the card image — always tappable on mobile.
+            The one inside the image is hover-only on desktop; this one is
+            the persistent fallback for touch. */}
+        <button
+          onClick={(e) => { e.stopPropagation(); setMenuOpen((v) => !v) }}
+          className="shrink-0 w-6 h-6 flex items-center justify-center text-vibe-text-muted hover:text-white transition-colors"
+          aria-label="More options"
+        >
+          <MoreHorizontal className="h-3.5 w-3.5" />
+        </button>
       </div>
-
-      {/* Context menu — rendered outside the overflow:hidden card */}
       <AnimatePresence>
         {menuOpen && (
           <motion.div

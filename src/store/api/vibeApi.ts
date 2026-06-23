@@ -23,7 +23,7 @@ import {
   type FetchArgs,
 } from '@reduxjs/toolkit/query/react'
 import type { RootState } from '../index'
-import { logout } from '../slices/authSlice'
+import { sessionExpired } from '../slices/authSlice'
 import { assetUrl } from '@/lib/utils'
 
 // ─────────────────────────────────────────────────────────
@@ -311,7 +311,7 @@ const rawBase = fetchBaseQuery({
 const baseQueryWithAuth: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryError> =
   async (args, api, extra) => {
     const result = await rawBase(args, api, extra)
-    if (result.error?.status === 401) api.dispatch(logout())
+    if (result.error?.status === 401) api.dispatch(sessionExpired())
     return result
   }
 

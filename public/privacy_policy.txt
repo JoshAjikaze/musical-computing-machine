@@ -1,0 +1,82 @@
+Privacy Policy for VibeGarage
+
+Effective Date: March 8, 2026
+
+Last Updated: June 18, 2026
+
+Welcome to VibeGarage ("we," "our," or "us"). We are committed to protecting your privacy and ensuring a secure environment for music fans, artists, and creators. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit and use our web application located at https://vibegarage.app (the "Platform").
+
+Please read this Privacy Policy carefully. By accessing or using the Platform, you agree to the terms of this Privacy Policy. If you do not agree with the terms of this policy, please do not access the Platform.
+1. Information We Collect
+
+We collect information about you in three ways: information you provide directly, information collected automatically, and information from third-party services.
+A. Information You Provide Directly
+
+    Account Information: When you register an account on VibeGarage, we collect your email address, password, username, and account type (e.g., Artist, Fan, Listener).
+
+    Creator Profile Information: If you use the Platform as an artist or content creator, we collect profile data including your artist name, biography, profile graphics, social media links, and any tracks, singles, EPs, or album metadata you explicitly upload.
+
+    Communications: We collect information when you contact our support team, report an issue, or interact with us via email.
+
+B. Information Collected Automatically
+
+    Log and Usage Data: When you stream audio or navigate the site, our servers automatically log details such as your IP address, browser type, device operating system, referral URLs, pages viewed, tracks played, and duration of streaming sessions.
+
+    Cookies and Tracking: We use standard web cookies and local storage tokens to keep you securely logged into your session, remember your player volume preferences, and analyze platform traffic patterns.
+
+C. Information from Third-Party Services
+
+    Analytics and Infrastructure: We use third-party tools to host our database, backend infrastructure, and optimize application delivery (such as Supabase, Render, and Netlify). These networks process diagnostic logs securely on our behalf.
+
+    Advertising Partners: We partner with third-party advertising networks, including PropellerAds, to serve ads when you visit the Platform. These companies may use cookies, tracking pixels, and device identifiers to collect anonymous data about your visits to VibeGarage and other websites to serve targeted advertisements.
+
+2. How We Use Your Information
+
+We use the information we collect to maintain, secure, and improve the VibeGarage streaming ecosystem. Specifically, we use your data to:
+
+    Manage, secure, and authenticate your user or creator account.
+
+    Process, transcode, stream, and display your uploaded audio files, EPs, and creator profiles.
+
+    Analyze user engagement metrics to improve our streaming delivery network and UI application layouts.
+
+    Detect, prevent, and mitigate security threats, technical bugs, copyright infringement, or fraudulent activities.
+
+    Deliver targeted or contextual advertisements through our monetization partners to fund our free streaming tier.
+
+3. Sharing and Disclosure of Your Information
+
+We do not sell your personal data. We only share information in the following specific circumstances:
+
+    Public Creator Profiles: Any tracks, album titles, artwork, artist names, and bios uploaded by creators are public-facing by design and can be searched, indexed by web engines, and viewed by anyone on the internet.
+
+    Third-Party Service Providers: We share necessary data with trusted cloud vendors (such as cloud hosting, authentication systems, and database management) operating under strict data security obligations.
+
+    Advertising & Monetization Providers: Anonymous device identifiers and traffic patterns may be shared with PropellerAds and related partners to optimize ad placements.
+
+    Legal Requirements: We may disclose your information if required to do so by applicable laws, law enforcement commands, or valid court orders to protect the rights, property, and safety of VibeGarage and our community.
+
+4. Data Security
+
+The security of your information is incredibly important to us. We secure data connections using global industry standards, including HTTPS/SSL data transit encryption across all API routing tiers. However, please note that no method of transmission over the internet or method of electronic storage is 100% secure, and we cannot guarantee absolute data security.
+5. Your Data Rights & Choices
+
+Depending on your geographic location, you may have rights regarding your personal information, including:
+
+    Access and Correction: You can review, update, or edit your core profile details at any time by logging into your VibeGarage settings dashboard.
+
+    Account Deletion: You may request the permanent deletion of your account, uploaded audio files, and historical database attributes by contacting our support team.
+
+    Cookie Opt-Outs: You can configure your local web browser to reject cookies or alerts, though certain parts of the streaming dashboard player may lose functional tracking context if you do so.
+
+6. Children's Privacy
+
+VibeGarage is not intended for use by individuals under the age of 13. We do not knowingly collect or maintain personal information from children under 13 years of age. If we discover that a child under 13 has provided us with personal data, we will take immediate steps to delete that account and clear the information from our servers.
+7. Changes to This Privacy Policy
+
+We reserve the right to update or modify this Privacy Policy at any time. We will notify you of any structural updates by revising the "Effective Date" at the top of this document. Your continued use of the Platform after changes are posted constitutes your explicit acceptance of the revised Privacy Policy terms.
+8. Contact Us
+
+If you have any questions, concerns, or requests regarding this Privacy Policy or your data handling on VibeGarage, please reach out to us at:
+
+VibeGarage Entertainment  Email: support@vibegarage.app  Website: https://vibegarage.app

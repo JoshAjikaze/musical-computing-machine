@@ -28,6 +28,8 @@ import { NowPlayingPage } from "./pages/user/NowPlayingPage"
 import { ArtistProfilePage } from "./pages/user/ArtistProfilePage"
 import { TrackPage } from "./pages/user/TrackPage"
 import { Footer } from "./components/features/footer/Footer"
+import { PrivacyPolicyPage } from "./pages/PrivacyPolicyPage"
+import { TermsAndConditionsPage } from "./pages/TermsAndConditionsPage"
 import { AdminLayout } from "./components/admin/AdminLayout"
 import { AdminDashboard } from "./pages/admin/AdminDashboard"
 import { UserManagementPage } from "./pages/admin/UserManagementPage"
@@ -38,6 +40,7 @@ import { ContentModerationPage } from "./pages/admin/ContentModerationPage"
 import { Toaster } from "./components/ui/sonner"
 import { AudioEngine } from "./components/app/AudioEngine"
 import { PWAUpdatePrompt } from "./components/app/PWAUpdatePrompt"
+import { AuthGuard } from "./components/app/AuthGuard"
 import { ProtectedRoute } from "./components/auth/ProtectedRoute"
 
 const AUTH_ROUTES = ["/login", "/join", "/verify", "/forgot-password"]
@@ -65,10 +68,13 @@ function App() {
             <Layout />
             <AudioEngine />
             <PWAUpdatePrompt />
+            <AuthGuard />
             <Toaster />
             <Routes>
               {/* Public */}
-            <Route path="/"                element={<Page><LandingPage /></Page>} />
+            <Route path="/"                    element={<Page><LandingPage /></Page>} />
+            <Route path="/privacy-policy"      element={<Page><PrivacyPolicyPage /></Page>} />
+            <Route path="/termsandconditions"  element={<Page><TermsAndConditionsPage /></Page>} />
 
             {/* Public share links — opened from ShareDialog's copyable URLs.
                 Deliberately NOT nested under /listen's ProtectedRoute: these

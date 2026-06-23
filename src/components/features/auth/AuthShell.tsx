@@ -30,7 +30,7 @@ export function AuthShell({ children, showBack = false, onBack, className }: Aut
       {/* Card */}
       <div
         className={cn(
-          "relative z-10 w-full max-w-[560px] bg-[#1c1c1c] rounded-2xl px-14 py-12",
+          "relative z-10 w-full max-w-[560px] bg-[#1c1c1c] rounded-2xl px-6 py-10 sm:px-14 sm:py-12",
           className
         )}
       >

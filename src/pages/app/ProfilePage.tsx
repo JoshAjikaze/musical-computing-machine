@@ -47,6 +47,12 @@ const stepFade = {
 
 // ── Page ──────────────────────────────────────────────────
 export function ProfilePage() {
+  const { user } = useAppSelector((s) => s.auth)
+  const isArtistOrAdmin = user?.role === "artist" || user?.role === "admin"
+
+  // Monetization is artist-only — listeners see General + Security only
+  const visibleTabs = TABS.filter((t) => t.id !== "monetization" || isArtistOrAdmin)
+
   const [activeTab, setActiveTab]     = useState<ProfileTab>("general")
   const [securityPanel, setSecurityPanel] = useState<SecurityPanel>(null)
 
@@ -56,7 +62,7 @@ export function ProfilePage() {
         {/* Sub-nav */}
         <aside className="w-56 shrink-0 border-r border-vibe-onyx-400 bg-vibe-onyx-100 py-6 px-3">
           <nav className="flex flex-col gap-1">
-            {TABS.map((tab) => (
+            {visibleTabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}

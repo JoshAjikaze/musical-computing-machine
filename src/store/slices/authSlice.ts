@@ -1,6 +1,14 @@
-import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
+import { createSlice, createAction, type PayloadAction } from '@reduxjs/toolkit'
 import type { User } from '../api/vibeApi'
 import { toast } from 'sonner'
+
+/**
+ * Dispatched by baseQueryWithAuth when a 401 comes back mid-session (token
+ * expired on the server). Distinct from logout() so the toast can explain
+ * *why* the user is being sent to /login — "session expired" reads very
+ * differently from "you signed out".
+ */
+export const sessionExpired = createAction('auth/sessionExpired')
 
 interface AuthState {
   user: User | null
@@ -13,12 +21,30 @@ interface AuthState {
   pendingCredentials: { email: string; password: string } | null
 }
 
-const storedUser = localStorage.getItem('vibe_user')
+// Read whatever redux-persist previously wrote for the auth slice. We do
+// this at slice init (not via extraReducers/REHYDRATE) because PersistGate
+// renders *before* the REHYDRATE action fires — reading here directly means
+// ProtectedRoute never sees isAuthenticated=false for a persisted session.
+function readPersistedAuth(): Pick<AuthState, 'user' | 'token' | 'isAuthenticated'> {
+  try {
+    const raw = localStorage.getItem('persist:root')
+    if (raw) {
+      const root = JSON.parse(raw)
+      if (root.auth) {
+        const auth = JSON.parse(root.auth) as Partial<AuthState>
+        if (auth.token && auth.user && auth.isAuthenticated) {
+          return { user: auth.user, token: auth.token, isAuthenticated: true }
+        }
+      }
+    }
+  } catch { /* parse errors — fall through to unauthenticated */ }
+  return { user: null, token: null, isAuthenticated: false }
+}
+
+const persisted = readPersistedAuth()
 
 const initialState: AuthState = {
-  user: storedUser ? JSON.parse(storedUser) : null,
-  token: "",
-  isAuthenticated: false,
+  ...persisted,
   isLoading: false,
   pendingEmail: null,
   pendingCredentials: null,
@@ -55,7 +81,7 @@ export const authSlice = createSlice({
       state.isAuthenticated = false
       state.pendingCredentials = null
       localStorage.removeItem('vibe_user')
-      toast.info("You are logged out")
+      toast.info("You've been signed out")
     },
     updateUser(state, action: PayloadAction<Partial<User>>) {
       if (state.user) {
@@ -63,6 +89,18 @@ export const authSlice = createSlice({
         localStorage.setItem('vibe_user', JSON.stringify(state.user))
       }
     },
+  },
+  extraReducers: (builder) => {
+    // Session expired — same state reset as logout but with a different toast
+    // so the user understands *why* they're being redirected to /login.
+    builder.addCase(sessionExpired, (state) => {
+      state.user = null
+      state.token = null
+      state.isAuthenticated = false
+      state.pendingCredentials = null
+      localStorage.removeItem('vibe_user')
+      toast.warning("Your session has expired — please sign in again")
+    })
   },
 })
 

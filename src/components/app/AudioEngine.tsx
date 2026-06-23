@@ -33,13 +33,13 @@ export function AudioEngine() {
     audioRef.current = audio
     _audioRef = audio
 
-    const onTimeUpdate  = () => dispatch(setProgress(audio.currentTime))
-    const onLoadedMeta  = () => dispatch(setDuration(audio.duration))
-    const onEnded       = () => {
+    const onTimeUpdate = () => dispatch(setProgress(audio.currentTime))
+    const onLoadedMeta = () => dispatch(setDuration(audio.duration))
+    const onEnded = () => {
       if (audio.loop) return          // repeatMode === 'one' handled via loop
       dispatch(nextTrack())
     }
-    const onPause       = () => {
+    const onPause = () => {
       // Sync back if the browser paused for network reasons but Redux says playing
       // (we let the isPlaying effect handle intentional pauses)
     }
@@ -48,18 +48,18 @@ export function AudioEngine() {
       dispatch(pause())
     }
 
-    audio.addEventListener("timeupdate",    onTimeUpdate)
+    audio.addEventListener("timeupdate", onTimeUpdate)
     audio.addEventListener("loadedmetadata", onLoadedMeta)
-    audio.addEventListener("ended",         onEnded)
-    audio.addEventListener("pause",         onPause)
-    audio.addEventListener("error",         onError)
+    audio.addEventListener("ended", onEnded)
+    audio.addEventListener("pause", onPause)
+    audio.addEventListener("error", onError)
 
     return () => {
-      audio.removeEventListener("timeupdate",    onTimeUpdate)
+      audio.removeEventListener("timeupdate", onTimeUpdate)
       audio.removeEventListener("loadedmetadata", onLoadedMeta)
-      audio.removeEventListener("ended",         onEnded)
-      audio.removeEventListener("pause",         onPause)
-      audio.removeEventListener("error",         onError)
+      audio.removeEventListener("ended", onEnded)
+      audio.removeEventListener("pause", onPause)
+      audio.removeEventListener("error", onError)
       audio.pause()
       audio.src = ""
       audioRef.current = null
