@@ -1,18 +1,18 @@
 import { useState } from "react"
 import { Outlet, Link, useLocation } from "react-router-dom"
-import { Home, Compass, Library, Plus, Heart, Menu, X, Search, Music2 } from "lucide-react"
+import { Home, Compass, Library, Plus, Heart, Menu, X, Search, Music2, BarChart2 } from "lucide-react"
 import { AnimatePresence, motion } from "framer-motion"
 import { VibeGarageLogo } from "@/components/ui/logo"
 import { PlayerBar } from "@/components/app/PlayerBar"
 import { QueuePanel } from "@/components/app/QueuePanel"
 import { CreatePlaylistDialog } from "@/components/app/CreatePlaylistDialog"
 import { useAppSelector } from "@/hooks/redux"
-import { useGetMyFavoritesQuery } from "@/store/api/vibeApi"
+import { useGetLikedTracksQuery } from "@/store/api/vibeApi"
 import { AvatarDropdown } from "@/components/app/AvatarDropdown"
 import { cn } from "@/lib/utils"
 
 const NAV_LINKS = [
-  { href: "/listen",         label: "Home",    icon: Home    },
+  { href: "/listen", label: "Home", icon: Home },
   { href: "/listen/explore", label: "Explore", icon: Compass },
   { href: "/listen/library", label: "Library", icon: Library },
 ]
@@ -27,8 +27,10 @@ function SidebarContent({
 }) {
   const location = useLocation()
   const playlists = useAppSelector((s) => s.playlists.playlists)
-  const { data: favorites } = useGetMyFavoritesQuery()
-  const likedCount = favorites?.tracks.length ?? 0
+  const { user } = useAppSelector((s) => s.auth)
+  const { data: likedTracks } = useGetLikedTracksQuery()
+  //@ts-ignore
+  const likedCount = likedTracks?.length ?? 0
 
   const isActive = (href: string) =>
     href === "/listen" ? location.pathname === "/listen" : location.pathname.startsWith(href)
@@ -137,6 +139,13 @@ function SidebarContent({
             className="flex items-center gap-3 px-4 py-3 rounded-md text-sm font-medium text-vibe-text-secondary hover:text-white hover:bg-vibe-onyx-300/50 transition-colors">
             <span className="h-4 w-4 text-center">🎧</span> Support
           </Link>
+          {/* Artist Dashboard — only shown for artist users */}
+          {(user?.role === "artist" || user?.role === "admin") && (
+            <Link to="/app" onClick={onClose}
+              className="flex items-center gap-3 px-4 py-3 rounded-md text-sm font-medium text-vibe-text-secondary hover:text-white hover:bg-vibe-onyx-300/50 transition-colors">
+              <BarChart2 className="h-4 w-4" /> Switch to Artist
+            </Link>
+          )}
         </div>
       </div>
     </div>
@@ -145,7 +154,7 @@ function SidebarContent({
 
 // ── Layout ────────────────────────────────────────────────
 export function UserLayout() {
-  const [mobileOpen, setMobileOpen]         = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
   const [createPlaylistOpen, setCreatePlaylistOpen] = useState(false)
   const location = useLocation()
 

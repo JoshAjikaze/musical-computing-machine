@@ -3,28 +3,33 @@ import { ArrowLeft, Play, Heart, X, Music2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAppDispatch } from "@/hooks/redux"
 import { playTrack } from "@/store/slices/playerSlice"
-import { useGetMyFavoritesQuery, useLikeTrackMutation, normaliseTrack, type Track } from "@/store/api/vibeApi"
+import { useGetLikedTracksQuery, useLikeTrackMutation, type Track } from "@/store/api/vibeApi"
 import { formatDuration } from "@/lib/formatters"
 import { toast } from "sonner"
 
 /**
- * "Liked music" — the sidebar's auto-playlist, backed by
- * GET /playlists/my-favorites rather than the regular playlist CRUD
- * endpoints, so it's its own page instead of slotting into
- * UserLibraryPage's Redux-backed playlist selection.
- *
- * The API's own `name` ("Favorites") and `cover_image` (a generic default
- * placeholder per the sample response) aren't used here — kept the
- * existing "Liked music" copy and heart-gradient treatment from the
- * sidebar instead, consistent branding rather than a generic playlist look.
+ * "Liked music" — shows all liked tracks via GET /listener/liked-tracks
  */
 export function LikedMusicPage() {
   const navigate = useNavigate()
   const dispatch = useAppDispatch()
-  const { data, isLoading } = useGetMyFavoritesQuery()
+  const { data, isLoading } = useGetLikedTracksQuery()
   const [likeTrack] = useLikeTrackMutation()
 
-  const tracks: Track[] = (data?.tracks ?? []).map((t) => normaliseTrack(t))
+  //@ts-ignore
+  const tracks: Track[] = (data ?? []).map((t:any) => ({
+    id: t.track_id,
+    title: t.title,
+    artist: t.artist ?? "",
+    artistId: "",
+    duration: 0,
+    audioUrl: "",
+    coverUrl: "",
+    genre: "",
+    playCount: 0,
+    likeCount: 0,
+    releaseDate: "",
+  }))
 
   function playAll() {
     if (!tracks.length) return
@@ -33,7 +38,7 @@ export function LikedMusicPage() {
 
   // POST /tracks/{id}/like is the same endpoint used to like a track
   // elsewhere in the app — assuming it toggles, so calling it again here
-  // unlikes. getMyFavorites is tagged 'Track', same as this mutation
+  // unlikes. getLikedTracks is tagged 'Track', same as this mutation
   // invalidates, so the list refetches either way and stays correct even
   // if that assumption is wrong.
   function handleUnlike(trackId: string, title: string) {
