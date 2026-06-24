@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom"
-import { X, BarChart2, Music2, MonitorPlay, Compass, User, Headphones, LogOut } from "lucide-react"
+import { X, BarChart2, Music2, MonitorPlay, Compass, User, Headphones, LogOut, Radio } from "lucide-react"
 import { AnimatePresence, motion } from "framer-motion"
 import { VibeGarageLogo } from "@/components/ui/logo"
 import { useAppDispatch } from "@/hooks/redux"
@@ -14,8 +14,9 @@ const NAV_ITEMS = [
 ]
 
 const ACCOUNT_ITEMS = [
-  { label: "Profile", href: "/app/profile", icon: User       },
-  { label: "Support", href: "/app/support", icon: Headphones },
+  { label: "Profile",   href: "/app/profile", icon: User       },
+  { label: "Support",   href: "/app/support", icon: Headphones },
+  { label: "Listeners", href: "/listen",      icon: Radio      },
 ]
 
 interface AppSidebarProps {
