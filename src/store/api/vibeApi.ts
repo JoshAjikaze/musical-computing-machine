@@ -89,18 +89,21 @@ export interface TrackOut {
 export interface ArtistProfileOut {
   id: string
   username: string
-  display_name: string
-  stage_name?: string
-  bio?: string
-  avatar_url?: string
-  banner_url?: string
-  followers: number
-  following: number
-  total_tracks: number
-  total_plays: number
-  is_verified?: boolean
-  top_tracks?: TrackOut[]
-  albums?: { id: string; title: string; cover_path: string | null; track_count: number }[]
+  stage_name?: string | null
+  avatar: string | null
+  is_verified: boolean
+  bio?: string | null
+  joined_date?: string
+  stats: {
+    total_streams: number
+    track_count: number
+  }
+  tracks: {
+    id: string
+    title: string
+    cover_art: string | null
+    duration: number
+  }[]
 }
 
 export interface PublicTrackOut {
@@ -169,6 +172,9 @@ export interface NEW_RELEASES {
   plays: number
   artist_id: string
   is_for_sale: boolean
+  username: string | null
+  genre?: string
+  duration?: number
 }
 
 
@@ -281,10 +287,11 @@ export function normaliseNewRelease(t: NEW_RELEASES, artistName = ""): Track {
     title: t.title,
     artist: artistName,
     artistId: t.artist_id,
-    duration: 0,
+    artistUsername: t.username ?? undefined,
+    duration: t.duration ?? 0,
     audioUrl: assetUrl(t.audio_path),
     coverUrl: assetUrl(t.cover_path),
-    genre: "",
+    genre: t.genre ?? "",
     playCount: t.plays,
     likeCount: t.likes,
     releaseDate: "",
@@ -459,7 +466,13 @@ export const vibeApi = createApi({
     /** GET /artist/stats → ArtistStatsOut */
     getArtistStats: b.query<ArtistStatsOut, void>({ query: () => '/artist/stats', providesTags: ['Dashboard'] }),
 
-    getArtistProfile: b.query<ArtistProfileOut, string>({ query: (username) => `/public/artists/${username}`, providesTags: ['Dashboard'] }),
+    getArtistProfile: b.query<ArtistProfileOut, string>({
+      query: (username) => ({
+        url: `/public/artists/profile/${username}`,
+        params: { json_mode: true },
+      }),
+      providesTags: ['Dashboard'],
+    }),
     followArtist: b.mutation<unknown, string>({ query: (id) => ({ url: `/artist/${id}/follow`, method: 'POST' }), invalidatesTags: ['Dashboard'] }),
     getFollowStatus: b.query<unknown, string>({ query: (id) => `/artist/${id}/follow-status` }),
 

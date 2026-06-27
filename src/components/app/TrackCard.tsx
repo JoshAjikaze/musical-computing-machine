@@ -18,7 +18,7 @@ type TrackMenuAction =
   | { type: "add_to_queue" }
   | { type: "add_to_favourites" }
   | { type: "share" }
-  | { type: "view_artist"; artistId: string }
+  | { type: "view_artist"; username: string }
 
 /**
  * Track card with the full context menu (queue, favourite, add-to-playlist,
@@ -102,12 +102,15 @@ export function TrackCard({
         setShareOpen(true)
         break
       case "view_artist": {
-        // Prefer the real username slug — the artist profile page calls
-        // GET /public/artists/{username} which only accepts usernames, not
-        // UUIDs. artistId is kept as a last resort (it may not resolve, but
-        // it's better than navigating nowhere at all).
-        const dest = track.artistUsername ?? track.artistId
-        if (dest) navigate(`/listen/artist/${dest}`)
+        // /public/artists/profile/{username}?json_mode=true only accepts a
+        // real username — not a UUID. Navigate only when we have one; otherwise
+        // surface a clear message rather than landing on a guaranteed error page.
+        const username = (action.username || "").trim()
+        if (username) {
+          navigate(`/listen/artist/${username}`)
+        } else {
+          toast.info("Artist profile not available for this track")
+        }
         break
       }
     }
@@ -269,7 +272,7 @@ export function TrackCard({
             <MenuItem
               icon={<span className="text-[11px]">👤</span>}
               label="View artist"
-              onClick={() => handleAction({ type: "view_artist", artistId: track.artistId })}
+              onClick={() => handleAction({ type: "view_artist", username: track.artistUsername ?? "" })}
             />
             <MenuItem
               icon={<span className="text-[11px]">🔗</span>}

@@ -1,46 +1,43 @@
 import { useState } from "react"
 import { useParams, useNavigate } from "react-router-dom"
-import { motion, AnimatePresence } from "framer-motion"
+import { motion } from "framer-motion"
 import {
   ArrowLeft, Share2, CheckCircle2, Music2, Play,
-  MoreVertical, Users, Headphones, Disc3,
+  Headphones, Disc3, Calendar,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAppDispatch, useAppSelector } from "@/hooks/redux"
-import { playTrack } from "@/store/slices/playerSlice"
+import { playTrack, togglePlay } from "@/store/slices/playerSlice"
 import {
   useGetArtistProfileQuery,
   useFollowArtistMutation,
-  normaliseTrack,
-  type ArtistProfileOut,
 } from "@/store/api/vibeApi"
-import { assetUrl } from "@/lib/utils"
-import { cn } from "@/lib/utils"
+import { assetUrl, cn } from "@/lib/utils"
+import { formatDuration } from "@/lib/formatters"
 import { toast } from "sonner"
 import { ShareDialog } from "@/components/app/ShareDialog"
 
-type Tab = "top_tracks" | "albums"
-
+/**
+ * Public-facing artist profile — viewed by listeners navigating from a
+ * track card or a shared link. "Edit Profile" is intentionally absent here;
+ * that action lives in the artist's own /app/profile dashboard, not on a
+ * page that any listener can open.
+ */
 export function ArtistProfilePage() {
   const { username } = useParams<{ username: string }>()
-  const navigate = useNavigate()
-  const dispatch = useAppDispatch()
-  const { user, isAuthenticated } = useAppSelector((s) => s.auth)
+  const navigate     = useNavigate()
+  const dispatch     = useAppDispatch()
+  const { isAuthenticated } = useAppSelector((s) => s.auth)
+  const { currentTrack, isPlaying } = useAppSelector((s) => s.player)
 
-  const [tab, setTab]         = useState<Tab>("top_tracks")
-  const [following, setFollowing] = useState(false)
-  const [shareOpen, setShareOpen] = useState(false)
+  const [following,  setFollowing]  = useState(false)
+  const [shareOpen,  setShareOpen]  = useState(false)
 
   const { data: profile, isLoading, isError } =
     useGetArtistProfileQuery(username ?? "", { skip: !username })
 
   const [followArtist, { isLoading: isFollowing }] = useFollowArtistMutation()
 
-  const isOwnProfile = user?.username === username
-
-  /** Used for actions that need an account — Follow, Play. Viewing and
-   *  sharing the profile itself never requires one (see /artist/:username
-   *  in App.tsx, a public route). */
   function requireAuth(action: () => void) {
     if (!isAuthenticated) {
       toast.info("Sign in to continue")
@@ -63,230 +60,281 @@ export function ArtistProfilePage() {
   }
 
   if (isLoading) return <ArtistProfileSkeleton />
-  if (isError || !profile) return (
-    <div className="flex flex-col items-center justify-center py-24 gap-4 text-vibe-text-muted">
-      <Music2 className="h-12 w-12 opacity-30" />
-      <p className="text-sm">Artist profile not found</p>
-      <button onClick={() => navigate(-1)} className="text-xs text-vibe-red underline">Go back</button>
-    </div>
-  )
 
-  const topTracks = (profile.top_tracks ?? []).map((t) => normaliseTrack(t))
-  const albums    = profile.albums ?? []
+  if (isError || !profile) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 gap-4 text-vibe-text-muted">
+        <Music2 className="h-12 w-12 opacity-30" />
+        <p className="text-sm">Artist profile not found</p>
+        <button onClick={() => navigate(-1)} className="text-xs text-vibe-red underline">
+          Go back
+        </button>
+      </div>
+    )
+  }
+
+  const displayName = profile.stage_name || profile.username
+  const avatarUrl   = profile.avatar && !profile.avatar.includes("default-avatar")
+    ? assetUrl(profile.avatar)
+    : null
+  const tracks = profile.tracks ?? []
+
+  function playAll() {
+    if (!tracks.length) return
+    requireAuth(() => {
+      // Tracks from this endpoint don't include audio_path, so we build a
+      // minimal Track-compatible shape. AudioEngine will handle missing
+      // audioUrl gracefully (no-op / toast).
+      const queue = tracks.map((t) => ({
+        id: t.id,
+        title: t.title,
+        artist: displayName,
+        artistId: profile!.id,
+        artistUsername: profile!.username,
+        coverUrl: assetUrl(t.cover_art),
+        audioUrl: "",
+        duration: t.duration,
+        genre: "",
+        playCount: 0,
+        likeCount: 0,
+        releaseDate: "",
+      }))
+      dispatch(playTrack({ track: queue[0], queue }))
+    })
+  }
+
+  function playOne(track: typeof tracks[0]) {
+    requireAuth(() => {
+      const t = {
+        id: track.id,
+        title: track.title,
+        artist: displayName,
+        artistId: profile!.id,
+        artistUsername: profile!.username,
+        coverUrl: assetUrl(track.cover_art),
+        audioUrl: "",
+        duration: track.duration,
+        genre: "",
+        playCount: 0,
+        likeCount: 0,
+        releaseDate: "",
+      }
+      if (currentTrack?.id === track.id) dispatch(togglePlay())
+      else dispatch(playTrack({ track: t, queue: [t] }))
+    })
+  }
 
   return (
     <>
-    <ShareDialog
-      open={shareOpen}
-      onClose={() => setShareOpen(false)}
-      title="Share Artist"
-      label={profile.display_name ?? profile.stage_name ?? profile.username}
-      sublabel={`@${profile.username}`}
-      coverUrl={profile.avatar_url ? assetUrl(profile.avatar_url) : undefined}
-      artistId={profile.id}
-      artistUsername={profile.username}
-    />
-    <div className="pb-8">
-      {/* ── Hero / Banner ── */}
-      <div className="relative h-56 md:h-72 bg-vibe-onyx-300 overflow-hidden">
-        {profile.banner_url ? (
-          <img
-            src={assetUrl(profile.banner_url)}
-            alt=""
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          // Gradient fallback matching brand palette
+      <ShareDialog
+        open={shareOpen}
+        onClose={() => setShareOpen(false)}
+        title="Share Artist"
+        label={displayName}
+        sublabel={`@${profile.username}`}
+        coverUrl={avatarUrl ?? undefined}
+        artistId={profile.id}
+        artistUsername={profile.username}
+      />
+
+      <div className="pb-8">
+        {/* ── Hero banner ── */}
+        <div className="relative h-48 md:h-64 overflow-hidden">
           <div className="w-full h-full bg-gradient-to-br from-vibe-onyx-200 via-vibe-onyx-300 to-black" />
-        )}
-        {/* Vignette */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-vibe-onyx" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-vibe-onyx" />
 
-        {/* Top bar actions */}
-        <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-4 pt-4 z-10">
-          <button
-            onClick={() => navigate(-1)}
-            className="h-9 w-9 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/60 transition-colors"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </button>
-          <button
-            onClick={() => setShareOpen(true)}
-            className="h-9 w-9 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/60 transition-colors"
-          >
-            <Share2 className="h-4 w-4" />
-          </button>
+          {/* Top bar */}
+          <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-4 pt-4 z-10">
+            <button
+              onClick={() => navigate(-1)}
+              className="h-9 w-9 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/60 transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => setShareOpen(true)}
+              className="h-9 w-9 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/60 transition-colors"
+            >
+              <Share2 className="h-4 w-4" />
+            </button>
+          </div>
         </div>
-      </div>
 
-      {/* ── Profile info row ── */}
-      <div className="px-4 md:px-8 -mt-12 relative z-10">
-        <div className="flex items-end justify-between gap-4 mb-5">
-          {/* Avatar */}
-          <div className="relative shrink-0">
-            <div className="h-24 w-24 md:h-28 md:w-28 rounded-full border-4 border-vibe-onyx bg-vibe-onyx-300 overflow-hidden">
-              {profile.avatar_url ? (
-                <img
-                  src={assetUrl(profile.avatar_url)}
-                  alt={profile.display_name}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <span className="font-heading text-3xl font-bold text-white">
-                    {(profile.display_name ?? profile.username ?? "?").slice(0, 2).toUpperCase()}
-                  </span>
-                </div>
+        {/* ── Profile info row ── */}
+        <div className="px-4 md:px-8 -mt-12 relative z-10">
+          <div className="flex items-end justify-between gap-4 mb-5">
+            {/* Avatar */}
+            <div className="relative shrink-0">
+              <div className="h-24 w-24 md:h-28 md:w-28 rounded-full border-4 border-vibe-onyx bg-vibe-onyx-300 overflow-hidden">
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt={displayName} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <span className="font-heading text-3xl font-bold text-white">
+                      {displayName.slice(0, 2).toUpperCase()}
+                    </span>
+                  </div>
+                )}
+              </div>
+              {profile.is_verified && (
+                <CheckCircle2 className="absolute bottom-1 right-1 h-5 w-5 text-vibe-red fill-white" />
               )}
             </div>
-            {profile.is_verified && (
-              <CheckCircle2 className="absolute bottom-1 right-1 h-5 w-5 text-vibe-red fill-white" />
-            )}
-          </div>
 
-          {/* Follow / Edit CTA */}
-          <div className="flex items-center gap-2 pb-1">
-            {isOwnProfile ? (
-              <Button variant="outline" size="sm" rounded="full">
-                Edit profile
-              </Button>
-            ) : (
+            {/* Actions — Follow + Play All. No "Edit Profile" here; this is
+                the listener-facing view. Artists edit their profile from
+                the /app/profile route in their own dashboard. */}
+            <div className="flex items-center gap-2 pb-1">
               <Button
                 size="sm"
                 rounded="full"
                 variant={following ? "outline" : "default"}
                 onClick={handleFollow}
                 loading={isFollowing}
-                className="min-w-[100px]"
+                className="min-w-[90px]"
               >
                 {following ? "Following" : "Follow"}
               </Button>
-            )}
-            {/* Play all button */}
-            {topTracks.length > 0 && (
-              <button
-                onClick={() => requireAuth(() => dispatch(playTrack({ track: topTracks[0], queue: topTracks })))}
-                className="h-10 w-10 rounded-full bg-vibe-red flex items-center justify-center shadow-lg hover:bg-vibe-red/90 active:scale-95 transition-all"
-              >
-                <Play className="h-4 w-4 fill-white text-white ml-0.5" />
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Name + stats */}
-        <div className="mb-5">
-          <div className="flex items-center gap-2 mb-0.5">
-            <h1 className="font-heading text-2xl font-bold text-white">
-              {profile.display_name ?? profile.stage_name ?? profile.username}
-            </h1>
-            {profile.is_verified && (
-              <CheckCircle2 className="h-4 w-4 text-vibe-red shrink-0" />
-            )}
-          </div>
-          <p className="text-sm text-vibe-text-muted mb-4">@{profile.username}</p>
-
-          {/* Stats row */}
-          <div className="flex items-center gap-6 flex-wrap">
-            <StatPill icon={<Users className="h-3.5 w-3.5" />}
-              label="Followers" value={profile.followers ?? 0} />
-            <StatPill icon={<Headphones className="h-3.5 w-3.5" />}
-              label="Streams"   value={profile.total_plays ?? 0} />
-            <StatPill icon={<Disc3 className="h-3.5 w-3.5" />}
-              label="Tracks"    value={profile.total_tracks ?? 0} />
-          </div>
-        </div>
-
-        {/* Bio */}
-        {profile.bio && (
-          <p className="text-sm text-vibe-text-secondary leading-relaxed mb-6 max-w-xl">
-            {profile.bio}
-          </p>
-        )}
-
-        {/* ── Tabs ── */}
-        <div className="flex items-center gap-1 border-b border-vibe-onyx-400 mb-5">
-          {(["top_tracks", "albums"] as Tab[]).map((t) => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={cn(
-                "px-4 py-2.5 text-sm font-medium transition-colors relative",
-                tab === t
-                  ? "text-white"
-                  : "text-vibe-text-muted hover:text-vibe-text-secondary"
+              {tracks.length > 0 && (
+                <button
+                  onClick={playAll}
+                  className="h-10 w-10 rounded-full bg-vibe-red flex items-center justify-center shadow-lg hover:bg-vibe-red/90 active:scale-95 transition-all"
+                  aria-label="Play all"
+                >
+                  <Play className="h-4 w-4 fill-white text-white ml-0.5" />
+                </button>
               )}
-            >
-              {t === "top_tracks" ? "Top Tracks" : "Albums"}
-              {tab === t && (
-                <motion.div
-                  layoutId="artist-profile-tab"
-                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-vibe-red rounded-full"
-                />
-              )}
-            </button>
-          ))}
-        </div>
+            </div>
+          </div>
 
-        {/* ── Tab content ── */}
-        <AnimatePresence mode="wait">
-          {tab === "top_tracks" ? (
-            <motion.div
-              key="tracks"
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.18 }}
-            >
-              {topTracks.length === 0 ? (
-                <EmptyState label="No tracks yet" />
-              ) : (
-                <div className="space-y-0.5">
-                  {topTracks.map((track, idx) => (
-                    <TrackRow
-                      key={track.id}
-                      rank={idx + 1}
-                      track={track}
-                      onPlay={() => requireAuth(() => dispatch(playTrack({ track, queue: topTracks })))}
-                    />
-                  ))}
+          {/* Name + handle */}
+          <div className="mb-5">
+            <div className="flex items-center gap-2 mb-0.5">
+              <h1 className="font-heading text-2xl font-bold text-white">{displayName}</h1>
+              {profile.is_verified && (
+                <CheckCircle2 className="h-4 w-4 text-vibe-red shrink-0" />
+              )}
+            </div>
+            <p className="text-sm text-vibe-text-muted mb-4">@{profile.username}</p>
+
+            {/* Stats row */}
+            <div className="flex items-center gap-6 flex-wrap">
+              <StatPill
+                icon={<Headphones className="h-3.5 w-3.5" />}
+                label="Streams"
+                value={profile.stats.total_streams}
+              />
+              <StatPill
+                icon={<Disc3 className="h-3.5 w-3.5" />}
+                label="Tracks"
+                value={profile.stats.track_count}
+              />
+              {profile.joined_date && (
+                <div className="flex items-center gap-1.5">
+                  <Calendar className="h-3.5 w-3.5 text-vibe-text-muted" />
+                  <span className="text-xs text-vibe-text-muted">Joined {profile.joined_date}</span>
                 </div>
               )}
-            </motion.div>
-          ) : (
-            <motion.div
-              key="albums"
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.18 }}
-            >
-              {albums.length === 0 ? (
-                <EmptyState label="No albums yet" />
-              ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                  {albums.map((album) => (
-                    <AlbumCard key={album.id} album={album} />
-                  ))}
-                </div>
-              )}
-            </motion.div>
+            </div>
+          </div>
+
+          {/* Bio */}
+          {profile.bio && (
+            <p className="text-sm text-vibe-text-secondary leading-relaxed mb-6 max-w-xl">
+              {profile.bio}
+            </p>
           )}
-        </AnimatePresence>
+
+          {/* ── Tracks ── */}
+          <div className="border-b border-vibe-onyx-400 mb-5 pb-1">
+            <h2 className="font-heading text-sm font-semibold text-white px-1">Tracks</h2>
+          </div>
+
+          {tracks.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 gap-3 text-vibe-text-muted">
+              <Music2 className="h-10 w-10 opacity-25" />
+              <p className="text-sm">No tracks yet</p>
+            </div>
+          ) : (
+            <div className="space-y-0.5">
+              {tracks.map((track, idx) => {
+                const isActive     = currentTrack?.id === track.id
+                const isNowPlaying = isActive && isPlaying
+                return (
+                  <button
+                    key={track.id}
+                    onClick={() => playOne(track)}
+                    className={cn(
+                      "flex items-center gap-4 w-full px-3 py-2.5 rounded-md transition-colors group text-left",
+                      isActive ? "bg-vibe-red/10 hover:bg-vibe-red/15" : "hover:bg-vibe-onyx-300"
+                    )}
+                  >
+                    {/* Rank / equaliser */}
+                    <span className={cn(
+                      "text-xs w-5 text-center shrink-0 tabular-nums",
+                      isActive ? "text-vibe-red" : "text-vibe-text-muted"
+                    )}>
+                      {isNowPlaying ? (
+                        <span className="inline-flex gap-[2px] items-end h-3">
+                          {[1,2,3].map((i) => (
+                            <motion.span
+                              key={i}
+                              className="inline-block w-[2px] bg-vibe-red rounded-full"
+                              animate={{ height: ["3px","9px","4px","7px","3px"] }}
+                              transition={{ duration: 0.8, repeat: Infinity, delay: i * 0.15 }}
+                            />
+                          ))}
+                        </span>
+                      ) : idx + 1}
+                    </span>
+
+                    {/* Cover art */}
+                    <div className="h-9 w-9 rounded-sm bg-vibe-onyx-400 shrink-0 overflow-hidden">
+                      {track.cover_art ? (
+                        <img
+                          src={assetUrl(track.cover_art)}
+                          alt={track.title}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Music2 className="h-4 w-4 text-vibe-text-muted" />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Title */}
+                    <div className="flex-1 min-w-0">
+                      <p className={cn(
+                        "text-sm font-medium truncate",
+                        isActive ? "text-vibe-red" : "text-white"
+                      )}>
+                        {track.title}
+                      </p>
+                      <p className="text-xs text-vibe-text-muted truncate">{displayName}</p>
+                    </div>
+
+                    {/* Duration */}
+                    <span className="text-xs text-vibe-text-muted tabular-nums shrink-0">
+                      {track.duration > 0 ? formatDuration(track.duration) : "—"}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          )}
+        </div>
       </div>
-    </div>
     </>
   )
 }
 
-// ── Sub-components ─────────────────────────────────────────
-
+// ── Helpers ─────────────────────────────────────────────
 function StatPill({ icon, label, value }: { icon: React.ReactNode; label: string; value: number }) {
-  function fmt(n: number) {
-    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
-    if (n >= 1_000)     return `${(n / 1_000).toFixed(1)}K`
-    return n.toString()
-  }
+  const fmt = (n: number) =>
+    n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)}M`
+    : n >= 1_000   ? `${(n / 1_000).toFixed(1)}K`
+    : n.toString()
   return (
     <div className="flex items-center gap-1.5">
       <span className="text-vibe-text-muted">{icon}</span>
@@ -296,127 +344,30 @@ function StatPill({ icon, label, value }: { icon: React.ReactNode; label: string
   )
 }
 
-function TrackRow({
-  rank, track, onPlay,
-}: {
-  rank: number
-  track: ReturnType<typeof normaliseTrack>
-  onPlay: () => void
-}) {
-  const { currentTrack, isPlaying } = useAppSelector((s) => s.player)
-  const isActive = currentTrack?.id === track.id
-
-  return (
-    <button
-      onClick={onPlay}
-      className="flex items-center gap-4 w-full px-3 py-2.5 rounded-md hover:bg-vibe-onyx-300 transition-colors group text-left"
-    >
-      <span className={cn("text-xs w-5 text-center shrink-0 tabular-nums",
-        isActive ? "text-vibe-red" : "text-vibe-text-muted")}
-      >
-        {isActive && isPlaying ? (
-          <span className="inline-flex gap-[2px] items-end h-3">
-            {[1,2,3].map((i) => (
-              <motion.span key={i} className="inline-block w-[2px] bg-vibe-red rounded-full"
-                animate={{ height: ["3px","9px","4px","7px","3px"] }}
-                transition={{ duration: 0.8, repeat: Infinity, delay: i*0.15 }}
-              />
-            ))}
-          </span>
-        ) : rank}
-      </span>
-
-      <div className="h-9 w-9 rounded-sm bg-vibe-onyx-400 shrink-0 overflow-hidden">
-        {track.coverUrl
-          ? <img src={track.coverUrl} alt={track.title} className="w-full h-full object-cover" />
-          : <Music2 className="h-4 w-4 text-vibe-text-muted m-auto mt-2.5" />
-        }
-      </div>
-
-      <div className="flex-1 min-w-0">
-        <p className={cn("text-sm font-medium truncate",
-          isActive ? "text-vibe-red" : "text-white")}>{track.title}</p>
-        <p className="text-xs text-vibe-text-muted truncate">{track.artist}</p>
-      </div>
-
-      <div className="flex items-center gap-3 shrink-0">
-        <span className="text-xs text-vibe-text-muted tabular-nums hidden sm:block">
-          {track.playCount > 0
-            ? track.playCount >= 1_000_000
-              ? `${(track.playCount/1_000_000).toFixed(1)}M`
-              : track.playCount >= 1_000
-                ? `${(track.playCount/1_000).toFixed(0)}K`
-                : track.playCount
-            : "—"
-          }
-        </span>
-        <button
-          className="opacity-0 group-hover:opacity-100 transition-opacity text-vibe-text-muted hover:text-white"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <MoreVertical className="h-4 w-4" />
-        </button>
-      </div>
-    </button>
-  )
-}
-
-function AlbumCard({ album }: { album: NonNullable<ArtistProfileOut["albums"]>[0] }) {
-  return (
-    <div className="group cursor-pointer">
-      <div className="relative aspect-square rounded-lg bg-vibe-onyx-400 overflow-hidden mb-2">
-        {album.cover_path ? (
-          <img
-            src={assetUrl(album.cover_path)}
-            alt={album.title}
-            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <Disc3 className="h-10 w-10 text-vibe-text-muted opacity-40" />
-          </div>
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-        <p className="absolute bottom-2 left-2 right-2 font-heading text-sm font-bold text-white uppercase tracking-wide truncate">
-          {album.title}
-        </p>
-      </div>
-      <p className="text-xs text-vibe-text-muted">{album.track_count} tracks</p>
-    </div>
-  )
-}
-
-function EmptyState({ label }: { label: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center py-16 gap-3 text-vibe-text-muted">
-      <Music2 className="h-10 w-10 opacity-25" />
-      <p className="text-sm">{label}</p>
-    </div>
-  )
-}
-
 function ArtistProfileSkeleton() {
   return (
     <div className="animate-pulse">
-      <div className="h-56 md:h-72 bg-vibe-onyx-300" />
+      <div className="h-48 md:h-64 bg-vibe-onyx-300" />
       <div className="px-4 md:px-8 -mt-12 relative z-10">
         <div className="flex items-end justify-between mb-5">
           <div className="h-24 w-24 rounded-full bg-vibe-onyx-400 border-4 border-vibe-onyx" />
-          <div className="h-9 w-24 rounded-full bg-vibe-onyx-400" />
+          <div className="h-9 w-24 rounded-full bg-vibe-onyx-400 mb-1" />
         </div>
-        <div className="h-6 w-48 rounded bg-vibe-onyx-400 mb-2" />
-        <div className="h-4 w-24 rounded bg-vibe-onyx-300 mb-5" />
+        <div className="h-6 w-44 rounded bg-vibe-onyx-400 mb-2" />
+        <div className="h-4 w-28 rounded bg-vibe-onyx-300 mb-5" />
         <div className="flex gap-6 mb-6">
           {[1,2,3].map((i) => <div key={i} className="h-4 w-20 rounded bg-vibe-onyx-300" />)}
         </div>
-        <div className="space-y-3">
-          {[1,2,3,4,5].map((i) => (
-            <div key={i} className="flex gap-3 items-center">
+        <div className="space-y-3 mt-8">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="flex gap-3 items-center px-3">
+              <div className="h-3 w-4 rounded bg-vibe-onyx-400" />
               <div className="h-9 w-9 rounded-sm bg-vibe-onyx-400" />
               <div className="flex-1 space-y-1.5">
-                <div className="h-3.5 w-40 rounded bg-vibe-onyx-400" />
-                <div className="h-3 w-24 rounded bg-vibe-onyx-300" />
+                <div className="h-3.5 w-36 rounded bg-vibe-onyx-400" />
+                <div className="h-3 w-20 rounded bg-vibe-onyx-300" />
               </div>
+              <div className="h-3 w-8 rounded bg-vibe-onyx-300" />
             </div>
           ))}
         </div>
