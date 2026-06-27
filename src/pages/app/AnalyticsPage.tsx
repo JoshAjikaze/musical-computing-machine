@@ -9,6 +9,7 @@ import { UploadPanel } from "@/components/app/UploadPanel"
 import { useAppSelector } from "@/hooks/redux"
 import { useGetArtistDashboardQuery, useGetArtistStatsQuery, useGetMyTracksQuery, normaliseTrack } from "@/store/api/vibeApi"
 import { formatCurrency, formatNumber, formatPlays } from "@/lib/formatters"
+import AdvertPlaceholder from "@/components/app/AdvertPlaceholder"
 
 // ── Mock data (matches the designs exactly) ───────────────
 
@@ -155,13 +156,5 @@ export function AnalyticsPage() {
       {/* Upload panel */}
       <UploadPanel open={uploadOpen} onClose={() => setUploadOpen(false)} />
     </>
-  )
-}
-
-function AdvertPlaceholder() {
-  return (
-    <div className="rounded-lg border border-vibe-onyx-400 bg-vibe-onyx-200 flex items-center justify-center min-h-[200px]">
-      <span className="text-xs text-vibe-text-muted uppercase tracking-widest">Advert</span>
-    </div>
   )
 }

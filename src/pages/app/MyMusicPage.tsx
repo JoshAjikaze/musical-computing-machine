@@ -7,6 +7,7 @@ import { useAppDispatch, useAppSelector } from "@/hooks/redux"
 import { playTrack } from "@/store/slices/playerSlice"
 import { useGetMyTracksQuery, normaliseTrack } from "@/store/api/vibeApi"
 import { cn } from "@/lib/utils"
+import AdvertPlaceholder from "@/components/app/AdvertPlaceholder"
 
 const ALBUM_SLOT_COUNT = 4
 
@@ -53,7 +54,7 @@ export function MyMusicPage() {
             <div className="flex items-center gap-2 mb-5">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                 strokeWidth="1.5" className="text-vibe-amber">
-                <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>
+                <rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 9h18M9 21V9" />
               </svg>
               <span className="text-sm font-medium text-vibe-text-secondary">My albums</span>
             </div>
@@ -61,24 +62,22 @@ export function MyMusicPage() {
               <div className="flex gap-4 pb-3">
                 {isLoading
                   ? Array.from({ length: ALBUM_SLOT_COUNT }).map((_, i) => (
-                      <div key={i} className="shrink-0 w-[180px] aspect-square rounded-md bg-vibe-onyx-300 animate-pulse" />
-                    ))
+                    <div key={i} className="shrink-0 w-[180px] aspect-square rounded-md bg-vibe-onyx-300 animate-pulse" />
+                  ))
                   : <>
-                      {albums.map((a) => (
-                        <AlbumCard key={a.title} title={a.title} coverUrl={a.coverUrl} />
-                      ))}
-                      {Array.from({ length: Math.max(0, ALBUM_SLOT_COUNT - albums.length) }).map((_, i) => (
-                        <EmptyAlbumSlot key={`e-${i}`} />
-                      ))}
-                    </>
+                    {albums.map((a) => (
+                      <AlbumCard key={a.title} title={a.title} coverUrl={a.coverUrl} />
+                    ))}
+                    {Array.from({ length: Math.max(0, ALBUM_SLOT_COUNT - albums.length) }).map((_, i) => (
+                      <EmptyAlbumSlot key={`e-${i}`} />
+                    ))}
+                  </>
                 }
               </div>
               <ScrollBar orientation="horizontal" />
             </ScrollArea>
           </div>
-          <div className="hidden lg:flex rounded-lg border border-vibe-onyx-400 bg-vibe-onyx-200 items-center justify-center min-h-[280px]">
-            <span className="text-xs text-vibe-text-muted uppercase tracking-widest">Advert</span>
-          </div>
+          <AdvertPlaceholder />
         </div>
 
         {/* Top singles + advert */}
@@ -149,10 +148,7 @@ export function MyMusicPage() {
               </div>
             )}
           </div>
-
-          <div className="rounded-lg border border-vibe-onyx-400 bg-vibe-onyx-200 flex items-center justify-center min-h-[200px]">
-            <span className="text-xs text-vibe-text-muted uppercase tracking-widest">Advert</span>
-          </div>
+          <AdvertPlaceholder />
         </div>
 
         {/* All tracks table */}
@@ -176,8 +172,8 @@ export function MyMusicPage() {
                     {track.coverUrl
                       ? <img src={track.coverUrl} alt={track.title} className="w-full h-full object-cover" />
                       : <div className="w-full h-full bg-vibe-onyx-400 flex items-center justify-center">
-                          <Music2 className="h-3.5 w-3.5 text-vibe-text-muted" />
-                        </div>
+                        <Music2 className="h-3.5 w-3.5 text-vibe-text-muted" />
+                      </div>
                     }
                   </div>
                   <div className="flex-1 min-w-0">
