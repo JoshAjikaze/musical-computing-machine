@@ -1,8 +1,11 @@
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
-import { ChevronRight, Lock, Shield, Clock, Eye, EyeOff, ArrowLeft, X, Info, Bell, BellOff } from "lucide-react"
+import {
+  ChevronRight, Lock, Shield, Clock, Eye, EyeOff,
+  ArrowLeft, X, Info, Bell, BellOff, Upload, User,
+} from "lucide-react"
 import { AnimatePresence, motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -19,56 +22,78 @@ import { useAppSelector } from "@/hooks/redux"
 import { usePushNotifications } from "@/hooks/usePushNotifications"
 import { cn } from "@/lib/utils"
 
-// ── Sub-tab types ─────────────────────────────────────────
-type ProfileTab = "general" | "monetization" | "security"
-
-// ── Right-panel types (Security flows) ───────────────────
+// ── Types ─────────────────────────────────────────────────
+type ProfileTab   = "general" | "monetization" | "security"
 type SecurityPanel = null | "change-password-otp" | "change-password" | "password-changed"
 
-const TABS: { id: ProfileTab; label: string }[] = [
+const ALL_TABS: { id: ProfileTab; label: string }[] = [
   { id: "general",      label: "General"      },
   { id: "monetization", label: "Monetization" },
   { id: "security",     label: "Security"     },
 ]
-
 const LANGUAGES = ["English", "French", "Spanish", "Portuguese", "Yoruba", "Hausa", "Igbo"]
 
+// ── Animations ────────────────────────────────────────────
 const panelSlide = {
   initial: { x: "100%" },
   animate: { x: 0, transition: { type: "spring" as const, stiffness: 300, damping: 30 } },
   exit:    { x: "100%", transition: { duration: 0.2 } },
 }
 const stepFade = {
-  initial: { opacity: 0, x: 16 },
-  animate: { opacity: 1, x: 0, transition: { duration: 0.2 } },
-  exit:    { opacity: 0, x: -16, transition: { duration: 0.15 } },
+  initial: { opacity: 0, x: 14 },
+  animate: { opacity: 1, x: 0, transition: { duration: 0.18 } },
+  exit:    { opacity: 0, x: -14, transition: { duration: 0.14 } },
 }
-
 
 // ── Page ──────────────────────────────────────────────────
 export function ProfilePage() {
   const { user } = useAppSelector((s) => s.auth)
   const isArtistOrAdmin = user?.role === "artist" || user?.role === "admin"
+  const tabs = ALL_TABS.filter((t) => t.id !== "monetization" || isArtistOrAdmin)
 
-  // Monetization is artist-only — listeners see General + Security only
-  const visibleTabs = TABS.filter((t) => t.id !== "monetization" || isArtistOrAdmin)
-
-  const [activeTab, setActiveTab]     = useState<ProfileTab>("general")
+  // null = mobile tab-list, otherwise = active tab
+  const [activeTab,     setActiveTab]     = useState<ProfileTab | null>(null)
   const [securityPanel, setSecurityPanel] = useState<SecurityPanel>(null)
+
+  // Desktop always shows a tab; default to "general"
+  const desktopTab = activeTab ?? "general"
+
+  function TabContent({ tab }: { tab: ProfileTab }) {
+    return (
+      <AnimatePresence mode="wait">
+        {tab === "general" && (
+          <motion.div key="general" {...stepFade}>
+            <GeneralSettings />
+          </motion.div>
+        )}
+        {tab === "monetization" && (
+          <motion.div key="monetization" {...stepFade}>
+            <MonetizationSettings />
+          </motion.div>
+        )}
+        {tab === "security" && (
+          <motion.div key="security" {...stepFade}>
+            <SecuritySettings onOpenPanel={setSecurityPanel} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    )
+  }
 
   return (
     <>
-      <div className="flex min-h-full">
-        {/* Sub-nav */}
-        <aside className="w-56 shrink-0 border-r border-vibe-onyx-400 bg-vibe-onyx-100 py-6 px-3">
-          <nav className="flex flex-col gap-1">
-            {visibleTabs.map((tab) => (
+      {/* ── Desktop layout ── */}
+      <div className="hidden md:flex min-h-full">
+        {/* Left sub-nav */}
+        <aside className="w-52 shrink-0 border-r border-vibe-onyx-400 bg-vibe-onyx-100 py-6 px-3">
+          <nav className="flex flex-col gap-0.5">
+            {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={cn(
-                  "w-full text-left px-4 py-3 rounded-md text-sm font-body font-medium transition-colors duration-150",
-                  activeTab === tab.id
+                  "w-full text-left px-4 py-3 rounded-md text-sm font-medium transition-colors duration-150",
+                  desktopTab === tab.id
                     ? "bg-vibe-onyx-300 text-white"
                     : "text-vibe-text-secondary hover:text-white hover:bg-vibe-onyx-300/50"
                 )}
@@ -80,28 +105,62 @@ export function ProfilePage() {
         </aside>
 
         {/* Content */}
-        <div className="flex-1 px-8 py-6">
-          <AnimatePresence mode="wait">
-            {activeTab === "general" && (
-              <motion.div key="general" {...stepFade}>
-                <GeneralSettings />
-              </motion.div>
-            )}
-            {activeTab === "monetization" && (
-              <motion.div key="monetization" {...stepFade}>
-                <MonetizationSettings />
-              </motion.div>
-            )}
-            {activeTab === "security" && (
-              <motion.div key="security" {...stepFade}>
-                <SecuritySettings onOpenPanel={setSecurityPanel} />
-              </motion.div>
-            )}
-          </AnimatePresence>
+        <div className="flex-1 px-8 py-8 overflow-y-auto">
+          <TabContent tab={desktopTab} />
         </div>
       </div>
 
-      {/* Security right-panel */}
+      {/* ── Mobile layout ── */}
+      <div className="flex flex-col md:hidden min-h-full">
+        {/* If no tab selected — show the tab list */}
+        {activeTab === null ? (
+          <div>
+            {/* Mobile header */}
+            <div className="flex items-center gap-2 px-4 py-5 border-b border-vibe-onyx-400">
+              <User className="h-4 w-4 text-vibe-text-muted" />
+              <span className="text-sm font-medium text-white">Profile</span>
+            </div>
+            <nav className="flex flex-col">
+              {tabs.map((tab, i) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={cn(
+                    "flex items-center justify-between w-full px-4 py-4 text-sm font-medium text-vibe-text-secondary hover:text-white hover:bg-vibe-onyx-300/40 transition-colors",
+                    i < tabs.length - 1 && "border-b border-vibe-onyx-400/50"
+                  )}
+                >
+                  {tab.label}
+                  <ChevronRight className="h-4 w-4 text-vibe-text-muted" />
+                </button>
+              ))}
+            </nav>
+          </div>
+        ) : (
+          /* Drilled in — show breadcrumb + content */
+          <div className="flex flex-col flex-1">
+            {/* Breadcrumb header */}
+            <div className="flex items-center gap-2 px-4 py-4 border-b border-vibe-onyx-400 bg-vibe-onyx-100 sticky top-0 z-10">
+              <button
+                onClick={() => setActiveTab(null)}
+                className="text-vibe-text-muted hover:text-white transition-colors"
+              >
+                <User className="h-4 w-4" />
+              </button>
+              <span className="text-vibe-text-muted text-sm">Profile</span>
+              <ChevronRight className="h-3.5 w-3.5 text-vibe-text-muted" />
+              <span className="text-sm text-white font-medium">
+                {ALL_TABS.find((t) => t.id === activeTab)?.label}
+              </span>
+            </div>
+            <div className="flex-1 px-4 py-6">
+              <TabContent tab={activeTab} />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── Security slide-in panel ── */}
       <AnimatePresence>
         {securityPanel && (
           <>
@@ -128,7 +187,11 @@ export function ProfilePage() {
                   </motion.div>
                 )}
                 {securityPanel === "password-changed" && (
-                  <motion.div key="done" {...stepFade} className="flex flex-col items-center justify-center min-h-full p-8 text-center">
+                  <motion.div
+                    key="done"
+                    {...stepFade}
+                    className="flex flex-col items-center justify-center min-h-full p-8 text-center"
+                  >
                     <PasswordChangedView onClose={() => setSecurityPanel(null)} />
                   </motion.div>
                 )}
@@ -149,24 +212,34 @@ export function ProfilePage() {
 
 // ── General settings ──────────────────────────────────────
 const generalSchema = z.object({
-  name:      z.string().min(2, "Name is required"),
+  name:      z.string().min(2, "Full name is required"),
   stageName: z.string().min(1, "Stage name is required"),
   language:  z.string().min(1, "Select a language"),
 })
 
 function GeneralSettings() {
   const { user } = useAppSelector((s) => s.auth)
-  const [saved, setSaved] = useState(false)
   const push = usePushNotifications()
+  const [saved, setSaved] = useState(false)
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const form = useForm<z.infer<typeof generalSchema>>({
     resolver: zodResolver(generalSchema),
     defaultValues: {
-      name:      user?.displayName ?? "Victor Desire",
-      stageName: user?.username    ?? "vdeeze",
+      name:      user?.displayName ?? "",
+      stageName: user?.username    ?? "",
       language:  "English",
     },
   })
+
+  function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > 10 * 1024 * 1024) return
+    const url = URL.createObjectURL(file)
+    setAvatarPreview(url)
+  }
 
   const onSubmit = async () => {
     await new Promise((r) => setTimeout(r, 600))
@@ -176,12 +249,54 @@ function GeneralSettings() {
 
   return (
     <div className="max-w-md">
-      <h2 className="font-heading text-xl font-semibold text-white mb-6">General settings</h2>
+      <h2 className="font-heading text-xl font-semibold text-white mb-7">General settings</h2>
+
+      {/* Avatar upload */}
+      <div className="mb-7">
+        <p className="text-sm font-medium text-vibe-text-secondary mb-3">Upload Display Picture</p>
+        <div className="flex items-center gap-5">
+          {/* Avatar circle */}
+          <div className="h-16 w-16 rounded-full bg-vibe-onyx-300 border border-vibe-onyx-400 overflow-hidden shrink-0 flex items-center justify-center">
+            {avatarPreview ? (
+              <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
+            ) : (
+              <User className="h-7 w-7 text-vibe-text-muted" />
+            )}
+          </div>
+          {/* Upload button + hints */}
+          <div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/png,image/jpeg"
+              className="hidden"
+              onChange={handleAvatarChange}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="default"
+              rounded="full"
+              className="mb-2 gap-2"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Upload className="h-3.5 w-3.5" />
+              Upload
+            </Button>
+            <p className="text-[11px] text-vibe-text-muted leading-relaxed">
+              • Image must be png or jpeg<br />
+              • Not more than 10mb.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Form fields */}
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
           <FormField control={form.control} name="name" render={({ field }) => (
             <FormItem>
-              <FormLabel>Name</FormLabel>
+              <FormLabel>Full Name</FormLabel>
               <FormControl><Input placeholder="Victor Desire" {...field} /></FormControl>
               <FormMessage />
             </FormItem>
@@ -226,20 +341,18 @@ function GeneralSettings() {
 
       {/* Push notifications */}
       <div className="mt-8 pt-6 border-t border-vibe-onyx-400">
-        <h3 className="text-sm font-medium text-vibe-text-secondary mb-3">Notifications</h3>
-        <div
-          className={cn(
-            "flex items-center justify-between w-full px-4 py-3.5 rounded-md border border-vibe-onyx-400 bg-vibe-onyx-300"
-          )}
-        >
-          <div className="flex items-center gap-3 text-vibe-text-secondary min-w-0">
-            {push.isSubscribed ? <Bell className="h-4 w-4 shrink-0" /> : <BellOff className="h-4 w-4 shrink-0" />}
+        <p className="text-xs font-medium text-vibe-text-muted uppercase tracking-wider mb-3">
+          Notifications
+        </p>
+        <div className="flex items-center justify-between w-full px-4 py-3.5 rounded-md border border-vibe-onyx-400 bg-vibe-onyx-300">
+          <div className="flex items-center gap-3 min-w-0">
+            {push.isSubscribed
+              ? <Bell className="h-4 w-4 shrink-0 text-vibe-text-secondary" />
+              : <BellOff className="h-4 w-4 shrink-0 text-vibe-text-secondary" />}
             <div className="min-w-0">
               <p className="text-sm font-medium text-white leading-tight">Push notifications</p>
               <p className="text-xs text-vibe-text-muted truncate">
-                {push.isSupported
-                  ? "New releases, followers, and activity"
-                  : "Not supported on this browser"}
+                {push.isSupported ? "New releases, followers, and activity" : "Not supported on this browser"}
               </p>
             </div>
           </div>
@@ -269,10 +382,10 @@ function MonetizationSettings() {
   const form = useForm<z.infer<typeof monetizationSchema>>({
     resolver: zodResolver(monetizationSchema),
     defaultValues: {
-      bankName:      "Access Bank",
-      accountNumber: "0042007935",
-      accountName:   "Victor Desire",
-      sortCode:      "ABNGLA",
+      bankName:      "",
+      accountNumber: "",
+      accountName:   "",
+      sortCode:      "",
     },
   })
 
@@ -285,13 +398,13 @@ function MonetizationSettings() {
   return (
     <div className="max-w-lg">
       <h2 className="font-heading text-xl font-semibold text-white mb-1">Monetization</h2>
-      <p className="text-sm text-vibe-text-muted mb-6">
+      <p className="text-sm text-vibe-text-muted mb-7">
         Carefully enter account details. Subsequent changes will require admin support.
       </p>
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
-          {/* Bank Name + Account Number */}
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          {/* Row 1 */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormField control={form.control} name="bankName" render={({ field }) => (
               <FormItem>
@@ -309,7 +422,7 @@ function MonetizationSettings() {
             )} />
           </div>
 
-          {/* Account Name + Sort code */}
+          {/* Row 2 */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormField control={form.control} name="accountName" render={({ field }) => (
               <FormItem>
@@ -328,7 +441,7 @@ function MonetizationSettings() {
           </div>
 
           {/* Actions */}
-          <div className="flex gap-3 pt-1">
+          <div className="flex gap-3 pt-2">
             <Button
               type="button"
               variant="outline"
@@ -339,30 +452,34 @@ function MonetizationSettings() {
             >
               {saved ? "Saved ✓" : "Save changes"}
             </Button>
-            <Button type="submit" size="lg" rounded="full" className="flex-1"
-              loading={form.formState.isSubmitting}>
+            <Button
+              type="submit"
+              size="lg"
+              rounded="full"
+              className="flex-1"
+              loading={form.formState.isSubmitting}
+            >
               Request Payout
             </Button>
           </div>
 
-          {/* OR divider */}
-          <div className="flex items-center gap-3">
+          {/* OR */}
+          <div className="flex items-center gap-3 py-1">
             <div className="flex-1 h-px bg-vibe-onyx-400" />
             <span className="text-xs text-vibe-text-muted">OR</span>
             <div className="flex-1 h-px bg-vibe-onyx-400" />
           </div>
 
-          {/* PayPal row */}
+          {/* PayPal */}
           <button
             type="button"
-            className="flex items-center justify-between w-full px-4 py-3 rounded-md border border-vibe-onyx-400 bg-vibe-onyx-300 hover:bg-vibe-onyx-400 transition-colors"
+            className="flex items-center justify-between w-full px-4 py-3.5 rounded-md border border-vibe-onyx-400 bg-vibe-onyx-300 hover:bg-vibe-onyx-400 transition-colors"
           >
             <div className="flex items-center gap-3">
-              {/* PayPal P icon */}
               <div className="w-6 h-6 rounded-full bg-[#003087] flex items-center justify-center shrink-0">
                 <span className="text-white text-xs font-bold leading-none">P</span>
               </div>
-              <span className="text-sm font-medium text-vibe-text-primary">Set up Pay Pal</span>
+              <span className="text-sm font-medium text-white">Set up Pay Pal</span>
             </div>
             <ChevronRight className="h-4 w-4 text-vibe-text-muted" />
           </button>
@@ -378,27 +495,27 @@ function SecuritySettings({ onOpenPanel }: { onOpenPanel: (p: SecurityPanel) => 
 
   const rows = [
     {
-      icon: <Lock className="h-4 w-4" />,
-      label: "Change Password",
-      action: <ChevronRight className="h-4 w-4 text-vibe-text-muted" />,
+      icon:    <Lock  className="h-4 w-4" />,
+      label:   "Change Password",
+      action:  <ChevronRight className="h-4 w-4 text-vibe-text-muted" />,
       onClick: () => onOpenPanel("change-password-otp"),
     },
     {
-      icon: <Shield className="h-4 w-4" />,
-      label: "Two-Factor Authentication",
+      icon:   <Shield className="h-4 w-4" />,
+      label:  "Two-Factor Authentication",
       action: (
         <Toggle
           checked={twoFAEnabled}
           onChange={setTwoFAEnabled}
-          aria-label="Toggle two-factor authentication"
+          aria-label="Toggle 2FA"
         />
       ),
       onClick: undefined,
     },
     {
-      icon: <Clock className="h-4 w-4" />,
-      label: "Login History",
-      action: <ChevronRight className="h-4 w-4 text-vibe-text-muted" />,
+      icon:    <Clock className="h-4 w-4" />,
+      label:   "Login History",
+      action:  <ChevronRight className="h-4 w-4 text-vibe-text-muted" />,
       onClick: () => {},
     },
   ]
@@ -408,7 +525,7 @@ function SecuritySettings({ onOpenPanel }: { onOpenPanel: (p: SecurityPanel) => 
       <h2 className="font-heading text-xl font-semibold text-white mb-1">Security</h2>
       <p className="text-sm text-vibe-text-muted mb-6">Security settings</p>
 
-      <div className="space-y-3">
+      <div className="space-y-2.5">
         {rows.map((row) => (
           <button
             key={row.label}
@@ -421,7 +538,7 @@ function SecuritySettings({ onOpenPanel }: { onOpenPanel: (p: SecurityPanel) => 
           >
             <div className="flex items-center gap-3 text-vibe-text-secondary">
               {row.icon}
-              <span className="text-sm font-medium">{row.label}</span>
+              <span className="text-sm font-medium text-white">{row.label}</span>
             </div>
             {row.action}
           </button>
@@ -449,7 +566,6 @@ function PasswordOTPPanel({
   const [verified, setVerified]     = useState(false)
   const [showBanner, setShowBanner] = useState(false)
   const { formatted, isDone, restart } = useCountdown(10)
-
   const maskedEmail = "ed*******22@yahoo.com"
 
   const handleOtpChange = async (val: string) => {
@@ -470,13 +586,10 @@ function PasswordOTPPanel({
         </button>
         <h2 className="font-heading text-xl font-semibold text-white">Password Reset</h2>
       </div>
-
       <p className="text-sm text-vibe-text-muted leading-relaxed">
         Enter the 4-digit code we have sent via the email address{" "}
         <span className="text-vibe-text-secondary">{maskedEmail}</span>
       </p>
-
-      {/* Success banner */}
       <AnimatePresence>
         {showBanner && (
           <motion.div
@@ -491,7 +604,6 @@ function PasswordOTPPanel({
           </motion.div>
         )}
       </AnimatePresence>
-
       <div className="space-y-3">
         <p className="text-sm text-vibe-text-muted">Enter authentication code</p>
         <OTPInput value={otp} onChange={handleOtpChange} verified={verified} />
@@ -500,7 +612,6 @@ function PasswordOTPPanel({
           <span className="text-white underline underline-offset-2 font-medium">{formatted}</span>
         </p>
       </div>
-
       <Button
         size="lg" rounded="full" className="w-full"
         onClick={isDone ? () => { setOtp(""); setVerified(false); setShowBanner(false); restart() } : undefined}
@@ -521,21 +632,14 @@ const changePassSchema = z.object({
   path: ["confirmPassword"],
 })
 
-function ChangePasswordPanel({
-  onBack, onSuccess,
-}: { onBack: () => void; onSuccess: () => void }) {
-  const [showPass, setShowPass]       = useState(false)
+function ChangePasswordPanel({ onBack, onSuccess }: { onBack: () => void; onSuccess: () => void }) {
+  const [showPass,    setShowPass]    = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
 
   const form = useForm<z.infer<typeof changePassSchema>>({
     resolver: zodResolver(changePassSchema),
     defaultValues: { password: "", confirmPassword: "" },
   })
-
-  const onSubmit = async () => {
-    await new Promise((r) => setTimeout(r, 700))
-    onSuccess()
-  }
 
   const ToggleEye = ({ show, toggle }: { show: boolean; toggle: () => void }) => (
     <button type="button" onClick={toggle} className="text-vibe-text-muted hover:text-white transition-colors">
@@ -551,10 +655,9 @@ function ChangePasswordPanel({
         </button>
         <h2 className="font-heading text-xl font-semibold text-white">Change Password</h2>
       </div>
-      <p className="text-sm text-vibe-text-muted">Securely change your password,</p>
-
+      <p className="text-sm text-vibe-text-muted">Securely change your password.</p>
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+        <form onSubmit={form.handleSubmit(onSuccess)} className="space-y-5">
           <FormField control={form.control} name="password" render={({ field }) => (
             <FormItem>
               <FormLabel>Password</FormLabel>
@@ -568,7 +671,6 @@ function ChangePasswordPanel({
               <FormMessage />
             </FormItem>
           )} />
-
           <FormField control={form.control} name="confirmPassword" render={({ field }) => (
             <FormItem>
               <FormLabel>Retype Password</FormLabel>
@@ -582,7 +684,6 @@ function ChangePasswordPanel({
               <FormMessage />
             </FormItem>
           )} />
-
           <Button type="submit" size="lg" rounded="full" className="w-full"
             loading={form.formState.isSubmitting}>
             Change password
@@ -593,7 +694,7 @@ function ChangePasswordPanel({
   )
 }
 
-// ── Password changed success ──────────────────────────────
+// ── Password changed ──────────────────────────────────────
 function PasswordChangedView({ onClose }: { onClose: () => void }) {
   return (
     <div className="flex flex-col items-center gap-6 py-8 text-center">
@@ -601,7 +702,7 @@ function PasswordChangedView({ onClose }: { onClose: () => void }) {
       <div className="space-y-2">
         <h2 className="font-heading text-2xl font-bold text-white">Password changed</h2>
         <p className="text-sm font-medium text-white">Your account is more secured</p>
-        <p className="text-sm text-vibe-text-secondary">you will be redirected to homepage to login.</p>
+        <p className="text-sm text-vibe-text-secondary">You will be redirected to homepage to login.</p>
       </div>
       <Button variant="outline" size="lg" rounded="full" className="w-full mt-4" onClick={onClose}>
         Close
