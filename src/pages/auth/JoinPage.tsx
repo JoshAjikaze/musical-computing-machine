@@ -287,6 +287,7 @@ function Step2({ onNext }: { onNext: (fullName: string, gender: string, dob: str
 // ── Step 3 — Role / Password / Terms ─────────────────────
 const step3Schema = z.object({
   role:      z.string().min(1, "Select how you'll use Vibe Garage"),
+  username:  z.string().optional(),
   stageName: z.string().optional(),
   password: z.string().min(8, "Must be at least 8 characters"),
   confirmPassword: z.string(),
@@ -297,6 +298,9 @@ const step3Schema = z.object({
 }).refine((v) => v.role !== "artist" || (v.stageName?.trim().length ?? 0) > 0, {
   message: "Enter your stage name",
   path: ["stageName"],
+}).refine((v) => v.role !== "fan" || (v.username?.trim().length ?? 0) >= 3, {
+  message: "Username must be at least 3 characters",
+  path: ["username"],
 })
 
 function Step3({ wizard }: { wizard: WizardState }) {
@@ -308,11 +312,12 @@ function Step3({ wizard }: { wizard: WizardState }) {
 
   const form = useForm<z.infer<typeof step3Schema>>({
     resolver: zodResolver(step3Schema),
-    defaultValues: { role: "", stageName: "", password: "", confirmPassword: "", terms: undefined },
+    defaultValues: { role: "", username: "", stageName: "", password: "", confirmPassword: "", terms: undefined },
   })
 
   const selectedRole = form.watch("role")
-  const isArtist = selectedRole === "artist"
+  const isArtist   = selectedRole === "artist"
+  const isListener = selectedRole === "fan"
 
   // Map UI role selection → backend enum
   const ROLE_MAP: Record<string, 'LISTENER' | 'ARTIST'> = {
@@ -335,7 +340,9 @@ function Step3({ wizard }: { wizard: WizardState }) {
       await register({
         email:      wizard.email,
         password:   values.password,
-        username:   wizard.fullName.replace(/\s+/g, '_').toLowerCase(),
+        username:   isListener && values.username
+          ? values.username.trim().toLowerCase()
+          : wizard.fullName.replace(/\s+/g, '_').toLowerCase(),
         full_name:  wizard.fullName,
         stage_name: isArtist && values.stageName ? values.stageName : wizard.fullName,
         dob:        formatDob(wizard.dob),
@@ -386,6 +393,38 @@ function Step3({ wizard }: { wizard: WizardState }) {
             </FormItem>
           )}
         />
+
+        {/* Username — only shown when Listener is selected */}
+        <AnimatePresence initial={false}>
+          {isListener && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2 }}
+              className="overflow-hidden"
+            >
+              <FormField
+                control={form.control}
+                name="username"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Username</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Choose a username"
+                        icon={<User className="h-4 w-4" />}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormDescription>This is how you'll be identified on Vibe Garage.</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Stage name — only shown when Artist is selected */}
         <AnimatePresence initial={false}>

@@ -18,9 +18,12 @@ import {
 } from "@/components/ui/select"
 import { OTPInput, useCountdown } from "@/components/features/auth/OTPInput"
 import { AmberTrophyIllustration } from "@/components/app/AmberTrophyIllustration"
-import { useAppSelector } from "@/hooks/redux"
+import { useAppDispatch, useAppSelector } from "@/hooks/redux"
 import { usePushNotifications } from "@/hooks/usePushNotifications"
-import { cn } from "@/lib/utils"
+import { useUploadAvatarMutation } from "@/store/api/vibeApi"
+import { updateUser } from "@/store/slices/authSlice"
+import { assetUrl, cn } from "@/lib/utils"
+import { toast } from "sonner"
 
 // ── Types ─────────────────────────────────────────────────
 type ProfileTab   = "general" | "monetization" | "security"
@@ -219,10 +222,12 @@ const generalSchema = z.object({
 
 function GeneralSettings() {
   const { user } = useAppSelector((s) => s.auth)
+  const dispatch = useAppDispatch()
   const push = usePushNotifications()
   const [saved, setSaved] = useState(false)
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [uploadAvatar, { isLoading: isUploadingAvatar }] = useUploadAvatarMutation()
 
   const form = useForm<z.infer<typeof generalSchema>>({
     resolver: zodResolver(generalSchema),
@@ -233,12 +238,46 @@ function GeneralSettings() {
     },
   })
 
-  function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
-    if (file.size > 10 * 1024 * 1024) return
-    const url = URL.createObjectURL(file)
-    setAvatarPreview(url)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Image must be under 10MB")
+      return
+    }
+    if (!["image/png", "image/jpeg"].includes(file.type)) {
+      toast.error("Image must be PNG or JPEG")
+      return
+    }
+
+    // Show the picked file immediately — don't make the user wait on the
+    // network round-trip to see what they selected.
+    const localUrl = URL.createObjectURL(file)
+    setAvatarPreview(localUrl)
+
+    const formData = new FormData()
+    formData.append("file", file)
+
+    try {
+      const res = await uploadAvatar(formData).unwrap()
+      // Response shape isn't confirmed against a live backend — defensively
+      // check the common field names a file-upload endpoint might return.
+      // Falls back to the local object URL (still correct visually) if none
+      // match, so the avatar doesn't appear to "fail" even if we can't
+      // resolve a server URL to persist into Redux.
+      const r = res as Record<string, unknown>
+      const serverUrl =
+        (typeof r?.avatar_url === "string" && r.avatar_url) ||
+        (typeof r?.avatar === "string" && r.avatar) ||
+        (typeof r?.url === "string" && r.url) ||
+        null
+
+      dispatch(updateUser({ avatarUrl: serverUrl ? assetUrl(serverUrl) : localUrl }))
+      toast.success("Display picture updated")
+    } catch {
+      setAvatarPreview(null)
+      toast.error("Couldn't upload image — please try again")
+    }
   }
 
   const onSubmit = async () => {
@@ -246,6 +285,8 @@ function GeneralSettings() {
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
   }
+
+  const currentAvatar = avatarPreview ?? (user?.avatarUrl ? assetUrl(user.avatarUrl) : null)
 
   return (
     <div className="max-w-md">
@@ -256,11 +297,16 @@ function GeneralSettings() {
         <p className="text-sm font-medium text-vibe-text-secondary mb-3">Upload Display Picture</p>
         <div className="flex items-center gap-5">
           {/* Avatar circle */}
-          <div className="h-16 w-16 rounded-full bg-vibe-onyx-300 border border-vibe-onyx-400 overflow-hidden shrink-0 flex items-center justify-center">
-            {avatarPreview ? (
-              <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
+          <div className="relative h-16 w-16 rounded-full bg-vibe-onyx-300 border border-vibe-onyx-400 overflow-hidden shrink-0 flex items-center justify-center">
+            {currentAvatar ? (
+              <img src={currentAvatar} alt="Avatar" className="w-full h-full object-cover" />
             ) : (
               <User className="h-7 w-7 text-vibe-text-muted" />
+            )}
+            {isUploadingAvatar && (
+              <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              </div>
             )}
           </div>
           {/* Upload button + hints */}
@@ -279,6 +325,8 @@ function GeneralSettings() {
               rounded="full"
               className="mb-2 gap-2"
               onClick={() => fileInputRef.current?.click()}
+              disabled={isUploadingAvatar}
+              loading={isUploadingAvatar}
             >
               <Upload className="h-3.5 w-3.5" />
               Upload

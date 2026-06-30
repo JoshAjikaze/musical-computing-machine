@@ -285,7 +285,10 @@ export function normaliseNewRelease(t: NEW_RELEASES, artistName = ""): Track {
   return {
     id: t.id,
     title: t.title,
-    artist: artistName,
+    // No display-name field exists on this response shape (only artist_id
+    // and username) — fall back to username so the PlayerBar/TrackCard
+    // show *something* identifiable instead of a blank artist line.
+    artist: artistName || t.username || "",
     artistId: t.artist_id,
     artistUsername: t.username ?? undefined,
     duration: t.duration ?? 0,
