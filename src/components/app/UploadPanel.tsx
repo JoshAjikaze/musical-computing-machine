@@ -25,7 +25,7 @@ import {
   useAddTrackToAlbumMutation,
   usePublishAlbumMutation,
   useSaveAlbumDraftMutation,
-  useGetAlbumByIdQuery,
+  useGetAlbumDraftsQuery,
 } from "@/store/api/vibeApi"
 import { toast } from "sonner"
 
@@ -40,48 +40,50 @@ type UploadStep =
   | "success-album" | "success-single"
 
 export interface PendingTrack {
-  id:         string        // temp uuid for list key
-  title:      string
-  genre:      string
-  price:      string
-  audioFile:  File
-  coverFile:  File | null
-  status:     "pending" | "uploading" | "done" | "error"
-  errorMsg?:  string
+  id: string        // temp uuid for list key
+  title: string
+  genre: string
+  price: string
+  audioFile: File
+  coverFile: File | null
+  status: "pending" | "uploading" | "done" | "error"
+  errorMsg?: string
 }
 
 interface UploadState {
-  step:         UploadStep
+  step: UploadStep
   // album draft continuation
   draftAlbumId: string
   // album
-  albumId:      string      // set after createAlbum succeeds
-  albumTitle:   string
-  albumArt:     File | null
-  description:  string
-  year:         string
+  albumId: string      // set after createAlbum succeeds
+  albumTitle: string
+  albumArt: File | null
+  description: string
+  year: string
   // tracks
   pendingTracks: PendingTrack[]
-  releaseDate:  string
+  releaseDate: string
   // single
-  singleTitle:       string
-  singleCoverArt:    File | null
-  singleYear:        string
+  singleTitle: string
+  singleGenre: string
+  singleCoverArt: File | null
+  singleYear: string
   singleReleaseDate: string
-  singleAudioFile:   File | null
-  featuredArtists:   string[]
+  singleAudioFile: File | null
+  featuredArtists: string[]
 }
 
 type UploadAction =
   | { type: "CHOOSE_ALBUM" }
   | { type: "CHOOSE_SINGLE" }
   | { type: "GOTO_DRAFT" }
+  | { type: "GOTO_ALBUM1" }
   | { type: "ALBUM_DRAFT_CONTINUE"; albumId: string }
-  | { type: "ALBUM1_NEXT"; payload: Pick<UploadState, "albumTitle"|"albumArt"|"description"|"year"> }
+  | { type: "ALBUM1_NEXT"; payload: Pick<UploadState, "albumTitle" | "albumArt" | "description" | "year"> & { albumId?: string } }
   | { type: "SET_ALBUM_ID"; albumId: string }
   | { type: "ALBUM2_NEXT" }
   | { type: "SUBMIT_ALBUM" }
-  | { type: "SINGLE1_NEXT"; payload: Pick<UploadState, "singleTitle"|"singleCoverArt"|"singleYear"|"singleReleaseDate"> }
+  | { type: "SINGLE1_NEXT"; payload: Pick<UploadState, "singleTitle" | "singleGenre" | "singleCoverArt" | "singleYear" | "singleReleaseDate"> }
   | { type: "SUBMIT_SINGLE" }
   | { type: "ADD_PENDING_TRACK"; track: PendingTrack }
   | { type: "REMOVE_PENDING_TRACK"; id: string }
@@ -101,13 +103,14 @@ const BACK_MAP: Partial<Record<UploadStep, UploadStep>> = {
 
 function reducer(s: UploadState, a: UploadAction): UploadState {
   switch (a.type) {
-    case "CHOOSE_ALBUM":   return { ...s, step: "album-draft" }
-    case "CHOOSE_SINGLE":  return { ...s, step: "single-1" }
-    case "GOTO_DRAFT":     return { ...s, step: "album-draft" }
+    case "CHOOSE_ALBUM": return { ...s, step: "album-draft" }
+    case "CHOOSE_SINGLE": return { ...s, step: "single-1" }
+    case "GOTO_DRAFT": return { ...s, step: "album-draft" }
+    case "GOTO_ALBUM1": return { ...s, step: "album-1" }
     case "ALBUM_DRAFT_CONTINUE":
       return { ...s, step: "album-2", albumId: a.albumId, draftAlbumId: a.albumId }
     case "ALBUM1_NEXT":
-      return { ...s, step: "album-2", ...a.payload }
+      return { ...s, step: "album-2", albumId: a.payload.albumId ?? s.albumId, ...a.payload }
     case "SET_ALBUM_ID":
       return { ...s, albumId: a.albumId }
     case "ALBUM2_NEXT":
@@ -148,7 +151,7 @@ const initial: UploadState = {
   albumTitle: "", albumArt: null, description: "", year: "",
   pendingTracks: [],
   releaseDate: "",
-  singleTitle: "", singleCoverArt: null, singleYear: "", singleReleaseDate: "",
+  singleTitle: "", singleGenre: "", singleCoverArt: null, singleYear: "", singleReleaseDate: "",
   singleAudioFile: null, featuredArtists: [],
 }
 
@@ -158,12 +161,12 @@ interface UploadPanelProps { open: boolean; onClose: () => void }
 const panelSlide = {
   initial: { x: "100%" },
   animate: { x: 0, transition: { type: "spring" as const, stiffness: 300, damping: 30 } },
-  exit:    { x: "100%", transition: { duration: 0.2 } },
+  exit: { x: "100%", transition: { duration: 0.2 } },
 }
 const stepFade = {
   initial: { opacity: 0, x: 20 },
   animate: { opacity: 1, x: 0, transition: { duration: 0.22 } },
-  exit:    { opacity: 0, x: -20, transition: { duration: 0.15 } },
+  exit: { opacity: 0, x: -20, transition: { duration: 0.15 } },
 }
 
 export function UploadPanel({ open, onClose }: UploadPanelProps) {
@@ -213,7 +216,7 @@ export function UploadPanel({ open, onClose }: UploadPanelProps) {
                   <PanelHeader title="Create Album" onBack={() => dispatch({ type: "BACK" })} />
                   <AlbumDraftStep
                     onContinueDraft={(id) => dispatch({ type: "ALBUM_DRAFT_CONTINUE", albumId: id })}
-                    onFresh={() => dispatch({ type: "ALBUM1_NEXT", payload: { albumTitle: "", albumArt: null, description: "", year: "" } })}
+                    onFresh={() => dispatch({ type: "GOTO_ALBUM1" })}
                   />
                 </motion.div>
               )}
@@ -226,7 +229,6 @@ export function UploadPanel({ open, onClose }: UploadPanelProps) {
                   <StepProgressBar steps={3} current={1} className="mb-7" />
                   <Album1Form
                     onNext={(p) => dispatch({ type: "ALBUM1_NEXT", payload: p })}
-                    onAlbumCreated={(id) => dispatch({ type: "SET_ALBUM_ID", albumId: id })}
                   />
                 </motion.div>
               )}
@@ -282,6 +284,7 @@ export function UploadPanel({ open, onClose }: UploadPanelProps) {
                   <StepProgressBar steps={2} current={2} className="mb-7" />
                   <Single2Form
                     singleTitle={state.singleTitle}
+                    singleGenre={state.singleGenre}
                     coverArt={state.singleCoverArt}
                     releaseDate={state.singleReleaseDate}
                     featuredArtists={state.featuredArtists}
@@ -352,8 +355,8 @@ function ChooseTypeStep({ onAlbum, onSingle }: { onAlbum: () => void; onSingle: 
           onSelect={() => setSelected("album")}
           icon={
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <rect x="3" y="3" width="18" height="18" rx="2"/>
-              <path d="M3 9h18M9 21V9"/>
+              <rect x="3" y="3" width="18" height="18" rx="2" />
+              <path d="M3 9h18M9 21V9" />
             </svg>
           }
           label="Create an Album"
@@ -363,8 +366,8 @@ function ChooseTypeStep({ onAlbum, onSingle }: { onAlbum: () => void; onSingle: 
           onSelect={() => setSelected("single")}
           icon={
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <circle cx="12" cy="12" r="9"/>
-              <circle cx="12" cy="12" r="3"/>
+              <circle cx="12" cy="12" r="9" />
+              <circle cx="12" cy="12" r="3" />
             </svg>
           }
           label="Upload a single"
@@ -414,28 +417,16 @@ function AlbumDraftStep({
   onContinueDraft: (id: string) => void
   onFresh: () => void
 }) {
-  const [mode, setMode]           = useState<"fresh" | "draft" | null>(null)
-  const [albumId, setAlbumId]     = useState("")
-  const [checking, setChecking]   = useState(false)
-  const [idError, setIdError]     = useState("")
-  const { data: draftAlbum, isLoading, isError } = useGetAlbumByIdQuery(albumId.trim(), {
-    skip: !checking || !albumId.trim(),
+  const [mode, setMode] = useState<"fresh" | "draft" | null>(null)
+  const [selectedId, setSelectedId] = useState("")
+
+  const { data: drafts = [], isLoading: draftsLoading } = useGetAlbumDraftsQuery(undefined, {
+    skip: mode !== "draft",
   })
 
-  const handleContinue = async () => {
-    if (!albumId.trim()) { setIdError("Please enter an album ID"); return }
-    setIdError("")
-    setChecking(true)
-  }
-
-  // When query resolves
-  if (checking && !isLoading) {
-    if (draftAlbum && !isError) {
-      onContinueDraft(albumId.trim())
-    } else if (isError) {
-      setIdError("Album not found. Check the ID and try again.")
-      setChecking(false)
-    }
+  const handleContinue = () => {
+    if (!selectedId) return
+    onContinueDraft(selectedId)
   }
 
   return (
@@ -446,7 +437,6 @@ function AlbumDraftStep({
 
       {/* Option cards */}
       <div className="grid grid-cols-2 gap-3">
-        {/* Continue draft */}
         <button
           type="button"
           onClick={() => setMode("draft")}
@@ -458,13 +448,12 @@ function AlbumDraftStep({
           )}
         >
           <FolderOpen className="h-7 w-7" />
-          <span className="text-sm font-semibold text-center leading-tight">Continue<br/>Draft</span>
+          <span className="text-sm font-semibold text-center leading-tight">Continue<br />Draft</span>
         </button>
 
-        {/* Fresh start */}
         <button
           type="button"
-          onClick={() => { setMode("fresh"); setIdError("") }}
+          onClick={() => { setMode("fresh"); setSelectedId("") }}
           className={cn(
             "flex flex-col items-center justify-center gap-3 rounded-xl border-2 p-6 transition-all",
             mode === "fresh"
@@ -473,11 +462,11 @@ function AlbumDraftStep({
           )}
         >
           <Plus className="h-7 w-7" />
-          <span className="text-sm font-semibold text-center leading-tight">New<br/>Album</span>
+          <span className="text-sm font-semibold text-center leading-tight">New<br />Album</span>
         </button>
       </div>
 
-      {/* Draft ID input */}
+      {/* Draft select */}
       <AnimatePresence>
         {mode === "draft" && (
           <motion.div
@@ -486,20 +475,31 @@ function AlbumDraftStep({
             exit={{ opacity: 0, height: 0 }}
             className="overflow-hidden space-y-2"
           >
-            <p className="text-sm font-medium text-vibe-text-secondary">Enter your Album ID</p>
-            <p className="text-xs text-vibe-text-muted">
-              You can find this in your email confirmation or My Music page.
-            </p>
-            <Input
-              placeholder="e.g. alb_3f8a2c..."
-              value={albumId}
-              onChange={(e) => { setAlbumId(e.target.value); setIdError("") }}
-              className={cn(idError && "border-vibe-red")}
-            />
-            {idError && (
-              <p className="flex items-center gap-1.5 text-xs text-vibe-red">
-                <AlertCircle className="h-3.5 w-3.5 shrink-0" />{idError}
-              </p>
+            <p className="text-sm font-medium text-vibe-text-secondary">Select a draft album</p>
+            {draftsLoading ? (
+              <div className="flex items-center gap-2 text-sm text-vibe-text-muted py-2">
+                <Loader2 className="h-4 w-4 animate-spin shrink-0" />
+                Loading drafts…
+              </div>
+            ) : drafts.length === 0 ? (
+              <div className="flex items-center gap-2 text-sm text-vibe-text-muted py-2">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                No drafts found. Start a new album.
+              </div>
+            ) : (
+              <Select value={selectedId} onValueChange={setSelectedId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose an album…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {drafts.map((d) => (
+                    <SelectItem key={d.id} value={d.id}>
+                      {d.title}
+                      <span className="ml-2 text-vibe-text-muted text-xs">({d.status})</span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             )}
           </motion.div>
         )}
@@ -510,8 +510,7 @@ function AlbumDraftStep({
           <Button
             size="lg" rounded="full" className="w-full"
             onClick={handleContinue}
-            loading={isLoading && checking}
-            disabled={!albumId.trim()}
+            disabled={!selectedId || draftsLoading}
           >
             Continue Album
           </Button>
@@ -530,28 +529,27 @@ function AlbumDraftStep({
 }
 
 // ── Album Step 1 — Metadata ───────────────────────────────
-const GENRES = ["Afrobeats","Hip-Hop","R&B","Pop","Rock","Electronic","Indie","Jazz","Gospel","Classical"]
+const GENRES = ["Afrobeats", "Hip-Hop", "R&B", "Pop", "Rock", "Electronic", "Indie", "Jazz", "Gospel", "Classical"]
 
 const album1Schema = z.object({
-  albumTitle:  z.string().min(1, "Album title is required"),
+  albumTitle: z.string().min(1, "Album title is required"),
   description: z.string().optional(),
-  year:        z.string().regex(/^\d{4}$/, "Enter a valid 4-digit year"),
+  releaseDate: z.string().min(1, "Select a release date"),
 })
 
 function Album1Form({
   onNext,
-  onAlbumCreated,
 }: {
-  onNext: (p: Pick<UploadState, "albumTitle"|"albumArt"|"description"|"year">) => void
-  onAlbumCreated: (id: string) => void
+  onNext: (p: Pick<UploadState, "albumTitle" | "albumArt" | "description" | "year"> & { albumId?: string }) => void
 }) {
-  const [albumArt, setAlbumArt]   = useState<File | null>(null)
-  const [artError, setArtError]   = useState("")
-  const [createAlbum, { isLoading }] = useCreateAlbumMutation()
+  const [albumArt, setAlbumArt] = useState<File | null>(null)
+  const [artError, setArtError] = useState("")
+  const [isCreatingAlbum, setIsCreatingAlbum] = useState(false)
+  const [createAlbum] = useCreateAlbumMutation()
 
   const form = useForm<z.infer<typeof album1Schema>>({
     resolver: zodResolver(album1Schema),
-    defaultValues: { albumTitle: "", description: "", year: "" },
+    defaultValues: { albumTitle: "", description: "", releaseDate: "" },
   })
 
   const onSubmit = async (v: z.infer<typeof album1Schema>) => {
@@ -560,16 +558,24 @@ function Album1Form({
 
     const fd = new FormData()
     fd.append("title", v.albumTitle)
-    fd.append("cover", albumArt)
-    if (v.description) fd.append("description", v.description)
-    if (v.year) fd.append("year", v.year)
+    fd.append("description", v.description ?? "")
+    fd.append("cover_image", albumArt)
+    if (v.releaseDate) fd.append("release_date", v.releaseDate)
 
+    setIsCreatingAlbum(true)
     try {
       const result = await createAlbum(fd).unwrap()
-      onAlbumCreated(result.id)
-      onNext({ albumTitle: v.albumTitle, albumArt, description: v.description ?? "", year: v.year })
+      onNext({
+        albumTitle: v.albumTitle,
+        albumArt,
+        description: v.description ?? "",
+        year: v.releaseDate,
+        albumId: result.id,
+      })
     } catch {
       toast.error("Failed to create album. Please try again.")
+    } finally {
+      setIsCreatingAlbum(false)
     }
   }
 
@@ -600,15 +606,22 @@ function Album1Form({
             <FormMessage />
           </FormItem>
         )} />
-        <FormField control={form.control} name="year" render={({ field }) => (
+        <FormField control={form.control} name="releaseDate" render={({ field }) => (
           <FormItem>
-            <FormLabel>Year of recording</FormLabel>
-            <FormControl><Input placeholder="YYYY" maxLength={4} {...field} /></FormControl>
+            <FormLabel>Release date</FormLabel>
+            <FormControl>
+              <Input
+                type="date"
+                icon={<CalendarDays className="h-4 w-4" />}
+                className="[color-scheme:dark]"
+                {...field}
+              />
+            </FormControl>
             <FormMessage />
           </FormItem>
         )} />
         <div className="mt-auto pt-2">
-          <Button type="submit" size="lg" rounded="full" className="w-full" loading={isLoading}>
+          <Button type="submit" size="lg" rounded="full" className="w-full" loading={isCreatingAlbum} disabled={isCreatingAlbum}>
             Next
           </Button>
         </div>
@@ -619,9 +632,9 @@ function Album1Form({
 
 // ── Album Step 2 — Multi-track upload ────────────────────
 const trackSchema = z.object({
-  title:  z.string().min(1, "Track title is required"),
-  genre:  z.string().min(1, "Select a genre"),
-  price:  z.string().default("0"),
+  title: z.string().min(1, "Track title is required"),
+  genre: z.string().min(1, "Select a genre"),
+  price: z.string().default("0"),
 })
 
 function AlbumTracksForm({
@@ -643,10 +656,10 @@ function AlbumTracksForm({
   const [isUploading, setIsUploading] = useState(false)
 
   // Per-track form state
-  const [audioFile, setAudioFile]   = useState<File | null>(null)
-  const [coverFile, setCoverFile]   = useState<File | null>(null)
+  const [audioFile, setAudioFile] = useState<File | null>(null)
+  const [coverFile, setCoverFile] = useState<File | null>(null)
   const [audioError, setAudioError] = useState("")
-  const [showForm, setShowForm]     = useState(pendingTracks.length === 0)
+  const [showForm, setShowForm] = useState(pendingTracks.length === 0)
 
   const form = useForm<z.infer<typeof trackSchema>>({
     resolver: zodResolver(trackSchema),
@@ -657,13 +670,13 @@ function AlbumTracksForm({
     if (!audioFile) { setAudioError("Please upload an audio file"); return }
     setAudioError("")
     const track: PendingTrack = {
-      id:        crypto.randomUUID(),
-      title:     v.title,
-      genre:     v.genre,
-      price:     v.price,
+      id: crypto.randomUUID(),
+      title: v.title,
+      genre: v.genre,
+      price: v.price,
       audioFile,
       coverFile,
-      status:    "pending",
+      status: "pending",
     }
     onAddTrack(track)
     // Reset for next track
@@ -684,10 +697,10 @@ function AlbumTracksForm({
     for (const track of pending) {
       onUpdateStatus(track.id, "uploading")
       const fd = new FormData()
-      fd.append("title",       track.title)
-      fd.append("audio",       track.audioFile)
-      fd.append("genre",       track.genre)
-      fd.append("price",       track.price)
+      fd.append("title", track.title)
+      fd.append("audio", track.audioFile)
+      fd.append("genre", track.genre)
+      fd.append("price", track.price)
       fd.append("is_for_sale", track.price !== "0" ? "true" : "false")
       if (track.coverFile) fd.append("cover", track.coverFile)
       try {
@@ -701,8 +714,8 @@ function AlbumTracksForm({
     onNext()
   }
 
-  const allDone    = pendingTracks.length > 0 && pendingTracks.every((t) => t.status === "done")
-  const hasErrors  = pendingTracks.some((t) => t.status === "error")
+  const allDone = pendingTracks.length > 0 && pendingTracks.every((t) => t.status === "done")
+  const hasErrors = pendingTracks.some((t) => t.status === "error")
   const canProceed = pendingTracks.length > 0
 
   return (
@@ -881,10 +894,10 @@ function TrackListItem({
   onRemove: () => void
 }) {
   const statusIcon = {
-    pending:   <Music2 className="h-3.5 w-3.5 text-vibe-text-muted" />,
+    pending: <Music2 className="h-3.5 w-3.5 text-vibe-text-muted" />,
     uploading: <Loader2 className="h-3.5 w-3.5 text-vibe-amber animate-spin" />,
-    done:      <CheckCircle2 className="h-3.5 w-3.5 text-green-400" />,
-    error:     <AlertCircle className="h-3.5 w-3.5 text-vibe-red" />,
+    done: <CheckCircle2 className="h-3.5 w-3.5 text-green-400" />,
+    error: <AlertCircle className="h-3.5 w-3.5 text-vibe-red" />,
   }[track.status]
 
   return (
@@ -893,8 +906,8 @@ function TrackListItem({
       track.status === "error"
         ? "border-vibe-red/40 bg-vibe-red/5"
         : track.status === "done"
-        ? "border-green-500/30 bg-green-500/5"
-        : "border-vibe-onyx-400 bg-vibe-onyx-300"
+          ? "border-green-500/30 bg-green-500/5"
+          : "border-vibe-onyx-400 bg-vibe-onyx-300"
     )}>
       <span className="shrink-0 text-xs font-medium text-vibe-text-muted w-5 text-center">
         {index + 1}
@@ -936,7 +949,7 @@ function AlbumPublishForm({
   trackCount: number
   onSubmit: () => void
 }) {
-  const [publishAlbum,   { isLoading: isPublishing }]  = usePublishAlbumMutation()
+  const [publishAlbum, { isLoading: isPublishing }] = usePublishAlbumMutation()
   const [saveAlbumDraft, { isLoading: isSavingDraft }] = useSaveAlbumDraftMutation()
 
   const form = useForm<z.infer<typeof publishSchema>>({
@@ -1030,25 +1043,26 @@ function AlbumPublishForm({
 // ── Single forms ──────────────────────────────────────────
 
 const single1Schema = z.object({
-  singleTitle:       z.string().min(1, "Track title is required"),
-  singleYear:        z.string().regex(/^\d{4}$/, "Enter a valid 4-digit year"),
+  singleTitle: z.string().min(1, "Track title is required"),
+  singleGenre: z.string().min(1, "Select a genre"),
+  singleYear: z.string().regex(/^\d{4}$/, "Enter a valid 4-digit year"),
   singleReleaseDate: z.string().min(1, "Select a release date"),
 })
 
 function Single1Form({ onNext }: {
-  onNext: (p: Pick<UploadState, "singleTitle"|"singleCoverArt"|"singleYear"|"singleReleaseDate">) => void
+  onNext: (p: Pick<UploadState, "singleTitle" | "singleGenre" | "singleCoverArt" | "singleYear" | "singleReleaseDate">) => void
 }) {
   const [coverArt, setCoverArt] = useState<File | null>(null)
   const [artError, setArtError] = useState("")
   const form = useForm<z.infer<typeof single1Schema>>({
     resolver: zodResolver(single1Schema),
-    defaultValues: { singleTitle: "", singleYear: "", singleReleaseDate: "" },
+    defaultValues: { singleTitle: "", singleGenre: "", singleYear: "", singleReleaseDate: "" },
   })
   const onSubmit = (v: z.infer<typeof single1Schema>) => {
     if (!coverArt) { setArtError("Please upload cover art"); return }
     setArtError("")
     onNext({
-      singleTitle: v.singleTitle, singleCoverArt: coverArt,
+      singleTitle: v.singleTitle, singleGenre: v.singleGenre, singleCoverArt: coverArt,
       singleYear: v.singleYear, singleReleaseDate: v.singleReleaseDate,
     })
   }
@@ -1059,6 +1073,20 @@ function Single1Form({ onNext }: {
           <FormItem>
             <FormLabel>Track title</FormLabel>
             <FormControl><Input placeholder="Enter name" {...field} /></FormControl>
+            <FormMessage />
+          </FormItem>
+        )} />
+        <FormField control={form.control} name="singleGenre" render={({ field }) => (
+          <FormItem>
+            <FormLabel>Genre</FormLabel>
+            <Select onValueChange={field.onChange} value={field.value}>
+              <FormControl>
+                <SelectTrigger><SelectValue placeholder="Select genre" /></SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                {GENRES.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}
+              </SelectContent>
+            </Select>
             <FormMessage />
           </FormItem>
         )} />
@@ -1094,17 +1122,18 @@ function Single1Form({ onNext }: {
 }
 
 function Single2Form({
-  singleTitle, coverArt, releaseDate, featuredArtists, onAddArtist, onSubmit,
+  singleTitle, singleGenre, coverArt, releaseDate, featuredArtists, onAddArtist, onSubmit,
 }: {
   singleTitle: string
+  singleGenre: string
   coverArt: File | null
   releaseDate: string
   featuredArtists: string[]
   onAddArtist: (name: string) => void
   onSubmit: () => void
 }) {
-  const [audioFile, setAudioFile]     = useState<File | null>(null)
-  const [audioError, setAudioError]   = useState("")
+  const [audioFile, setAudioFile] = useState<File | null>(null)
+  const [audioError, setAudioError] = useState("")
   const [artistInput, setArtistInput] = useState("")
   const [uploadTrackArtist, { isLoading: isSubmitting }] = useUploadTrackArtistMutation()
 
@@ -1119,6 +1148,7 @@ function Single2Form({
     fd.append("title", singleTitle)
     fd.append("audio", audioFile)
     if (coverArt) fd.append("cover", coverArt)
+    if (singleGenre) fd.append("genre", singleGenre)
     try {
       await uploadTrackArtist(fd).unwrap()
       toast.success("Single uploaded successfully!")
@@ -1173,6 +1203,7 @@ function Single2Form({
         <div className="rounded-lg border border-vibe-onyx-400 bg-vibe-onyx-300 px-4 py-3 space-y-1">
           <p className="text-xs text-vibe-text-muted uppercase tracking-wide font-medium">Submitting</p>
           {singleTitle && <p className="text-sm text-vibe-text-primary"><span className="text-vibe-text-muted">Title: </span>{singleTitle}</p>}
+          {singleGenre && <p className="text-sm text-vibe-text-primary"><span className="text-vibe-text-muted">Genre: </span>{singleGenre}</p>}
           {releaseDate && <p className="text-sm text-vibe-text-primary"><span className="text-vibe-text-muted">Release: </span>{new Date(releaseDate).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}</p>}
           {coverArt && <p className="text-sm text-vibe-text-primary"><span className="text-vibe-text-muted">Cover: </span>{coverArt.name}</p>}
         </div>

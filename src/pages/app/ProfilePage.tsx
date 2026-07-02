@@ -538,16 +538,10 @@ function MonetizationSettings() {
 }
 
 // ── Security settings ─────────────────────────────────────
-function SecuritySettings({ onOpenPanel }: { onOpenPanel: (p: SecurityPanel) => void }) {
+function SecuritySettings({ }: { onOpenPanel: (p: SecurityPanel) => void }) {
   const [twoFAEnabled, setTwoFAEnabled] = useState(false)
 
   const rows = [
-    {
-      icon:    <Lock  className="h-4 w-4" />,
-      label:   "Change Password",
-      action:  <ChevronRight className="h-4 w-4 text-vibe-text-muted" />,
-      onClick: () => onOpenPanel("change-password-otp"),
-    },
     {
       icon:   <Shield className="h-4 w-4" />,
       label:  "Two-Factor Authentication",

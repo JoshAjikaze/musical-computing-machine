@@ -58,6 +58,7 @@ export interface UserResponse {
   stage_name?: string | null
   display_name?: string | null
   full_name?: string | null
+  avatar_url?: string | null
 }
 
 export interface ArtistStatsOut {
@@ -172,7 +173,8 @@ export interface NEW_RELEASES {
   plays: number
   artist_id: string
   is_for_sale: boolean
-  username: string | null
+  username: string | null      // present on new-releases
+  artist_name?: string | null  // present on trending singles
   genre?: string
   duration?: number
 }
@@ -231,6 +233,7 @@ export function normaliseUser(u: UserResponse): User {
     isPremium: u.is_verified_artist,
     role,
     is_verified_artist: u.is_verified_artist,
+    avatarUrl: u.avatar_url ? assetUrl(u.avatar_url) : undefined,
     createdAt: new Date().toISOString(),
   }
 }
@@ -285,10 +288,10 @@ export function normaliseNewRelease(t: NEW_RELEASES, artistName = ""): Track {
   return {
     id: t.id,
     title: t.title,
-    // No display-name field exists on this response shape (only artist_id
-    // and username) — fall back to username so the PlayerBar/TrackCard
-    // show *something* identifiable instead of a blank artist line.
-    artist: artistName || t.username || "",
+    // Priority: caller-supplied name > username (new-releases) > artist_name
+    // (trending singles) > blank. Both endpoints share this normaliser but
+    // use different field names for the artist's display identity.
+    artist: artistName || t.username || t.artist_name || "",
     artistId: t.artist_id,
     artistUsername: t.username ?? undefined,
     duration: t.duration ?? 0,
@@ -511,24 +514,29 @@ export const vibeApi = createApi({
     getPublicTrack: b.query<TrackOut, string>({ query: (id) => `/tracks/public/${id}`, providesTags: ['Track'] }),
 
     // ── Albums ────────────────────────────────────────────────────
-    /** POST /albums/create  multipart: { title, cover?, description?, year?, release_date? } */
+    /** GET /albums/drafts → in-progress albums for the logged-in artist */
+    getAlbumDrafts: b.query<{ id: string; title: string; status: string }[], void>({
+      query: () => '/albums/drafts',
+      providesTags: ['Album'],
+    }),
+    /** POST /albums  multipart: { title, cover?, description?, year?, release_date? } */
     createAlbum: b.mutation<{ id: string; title: string; status: string }, FormData>({
-      query: (body) => ({ url: '/albums/create', method: 'POST', body }),
+      query: (body) => ({ url: '/albums', method: 'POST', body }),
       invalidatesTags: ['Album'],
     }),
-    /** POST /albums/{album_id}/tracks  multipart: { title, audio, cover?, genre?, price?, is_for_sale? } */
+    /** PUT /albums/{album_id}/tracks  multipart: { title, audio, cover?, genre?, price?, is_for_sale? } */
     addTrackToAlbum: b.mutation<TrackOut, { albumId: string; body: FormData }>({
-      query: ({ albumId, body }) => ({ url: `/albums/${albumId}/tracks`, method: 'POST', body }),
+      query: ({ albumId, body }) => ({ url: `/albums/${albumId}/tracks`, method: 'PUT', body }),
       invalidatesTags: ['Album', 'Track'],
     }),
-    /** GET /albums/{album_id}  → album details */
+    /** GET /albums/{album_id} → album details */
     getAlbumById: b.query<{ id: string; title: string; status: string; tracks: TrackOut[] }, string>({
       query: (id) => `/albums/${id}`,
       providesTags: (_r, _e, id) => [{ type: 'Album', id }],
     }),
-    /** PATCH /albums/{album_id}/publish */
+    /** POST /albums/publish/{album_id} */
     publishAlbum: b.mutation<unknown, string>({
-      query: (id) => ({ url: `/albums/${id}/publish`, method: 'PATCH' }),
+      query: (id) => ({ url: `/albums/publish/${id}`, method: 'POST' }),
       invalidatesTags: ['Album'],
     }),
     /** PATCH /albums/{album_id}/draft */
@@ -677,6 +685,7 @@ export const {
   useUploadTrackMutation, useStreamTrackQuery, useDownloadTrackQuery,
   useGetMyTracksQuery, useLikeTrackMutation,
   useGetLatestTracksQuery, useGetTrendingTracksQuery, useGetPublicTrackQuery,
+  useGetAlbumDraftsQuery,
   useCreateAlbumMutation,
   useAddTrackToAlbumMutation,
   useGetAlbumByIdQuery,

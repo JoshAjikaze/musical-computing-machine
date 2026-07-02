@@ -103,11 +103,17 @@ export function TrackCard({
         break
       case "view_artist": {
         // /public/artists/profile/{username}?json_mode=true only accepts a
-        // real username — not a UUID. Navigate only when we have one; otherwise
-        // surface a clear message rather than landing on a guaranteed error page.
-        const username = (action.username || "").trim()
-        if (username) {
-          navigate(`/listen/artist/${username}`)
+        // real username slug, not a UUID. Preference order:
+        //   1. artistUsername  — real slug from the API when available
+        //   2. action.username — same value, kept for direct menu dispatch
+        //   3. track.artist    — populated from artist_name on trending singles;
+        //      slugified as a last-resort guess (may not resolve every time)
+        const slug =
+          (track.artistUsername || "").trim() ||
+          (action.username || "").trim() ||
+          (track.artist || "").trim().toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "")
+        if (slug) {
+          navigate(`/listen/artist/${slug}`)
         } else {
           toast.info("Artist profile not available for this track")
         }
