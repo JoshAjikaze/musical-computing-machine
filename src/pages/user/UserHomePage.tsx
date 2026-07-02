@@ -54,7 +54,7 @@ export function UserHomePage() {
       {/* Afrobeat mix */}
       <section>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-heading text-base font-semibold text-white">Afrobeat mix for you</h2>
+          <h2 className="font-heading text-base font-semibold text-white">Mixes for you</h2>
           <button
             onClick={() => navigate("/listen/afrobeat-mixes")}
             className="flex items-center gap-1 text-xs text-vibe-text-muted hover:text-white transition-colors"

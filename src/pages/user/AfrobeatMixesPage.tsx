@@ -24,7 +24,7 @@ export function AfrobeatMixesPage() {
         >
           <ArrowLeft className="h-4 w-4" />
         </button>
-        <h1 className="font-heading text-xl md:text-2xl font-bold text-white">Afrobeat mixes</h1>
+        <h1 className="font-heading text-xl md:text-2xl font-bold text-white">Mixes</h1>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
