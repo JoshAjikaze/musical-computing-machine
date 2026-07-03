@@ -306,16 +306,37 @@ export function normaliseNewRelease(t: NEW_RELEASES, artistName = ""): Track {
 }
 
 // ─────────────────────────────────────────────────────────
-// Global Search (/explore/search)
+// Global Search (/explore/search) — confirmed response shape:
+// { query, results: { tracks: [...], artists: [...], clips: [...] } }
 // ─────────────────────────────────────────────────────────
 
-/**
- * Artist shape as it might appear inside a /explore/search response.
- * NOTE: not confirmed against a live response — modelled after the fields
- * ArtistProfileOut and UserResponse already use elsewhere for an artist's
- * identity (username / stage_name / avatar), since no sample response was
- * available when this was written. Flagging per convention.
- */
+/** Minimal artist identity nested inside a search track hit. Confirmed
+ *  fields are `id` and `stage_name` (which can be null) — no `username` has
+ *  been observed yet, which matters because artist navigation elsewhere in
+ *  the app is username-based, never UUID-based. */
+export interface SearchTrackArtist {
+  id: string
+  username?: string | null
+  stage_name?: string | null
+}
+
+/** Confirmed track shape from a search hit. Notably thinner than TrackOut/
+ *  NEW_RELEASES — no audio_path, cover_path, duration, or genre yet, so a
+ *  track card built from this has no artwork and won't actually play until
+ *  the backend adds those fields (same class of gap as the artist-profile
+ *  track list — see "Known Gaps" in the dev log). */
+export interface SearchTrackOut {
+  id: string
+  title: string
+  play_count: number
+  like_count: number
+  artist: SearchTrackArtist
+}
+
+/** NOTE: not yet observed in a live response (both sample searches
+ *  returned an empty `artists` array) — modelled after the artist identity
+ *  fields used elsewhere (username / stage_name / avatar) until a real hit
+ *  is available to confirm against. */
 export interface SearchArtistOut {
   id: string
   username?: string | null
@@ -325,19 +346,18 @@ export interface SearchArtistOut {
   is_verified?: boolean
 }
 
-/**
- * NOTE: /explore/search's response envelope isn't confirmed either — this
- * models the shape considered most likely (tracks + artists side by side,
- * mirroring how the other Explore endpoints return tracks and the public
- * artist endpoints return artist objects). normaliseSearchResults() below
- * also tolerates a bare array (of tracks, artists, or a mix of both) so the
- * UI doesn't break outright if the real contract turns out to be simpler —
- * same "flag it, don't assume it silently" convention as elsewhere in this
- * file. Adjust here first if the live response differs.
- */
-export interface GlobalSearchResult {
-  tracks?: (TrackOut | NEW_RELEASES)[]
-  artists?: SearchArtistOut[]
+/** NOTE: `clips` has only ever been observed as an empty array — shape
+ *  entirely unconfirmed. Not surfaced in the UI yet; revisit once there's a
+ *  sample response with actual clip data to model against. */
+export type SearchClipOut = Record<string, unknown>
+
+export interface GlobalSearchResponse {
+  query: string
+  results: {
+    tracks: SearchTrackOut[]
+    artists: SearchArtistOut[]
+    clips: SearchClipOut[]
+  }
 }
 
 /**
@@ -352,13 +372,25 @@ export interface NormalisedSearchArtist {
   usernameSlug: string
 }
 
-function searchItemIsTrack(item: any): item is TrackOut | NEW_RELEASES {
-  return !!item && typeof item === 'object' && 'id' in item && 'title' in item
-}
-
-function searchItemIsArtist(item: any): item is SearchArtistOut {
-  return !!item && typeof item === 'object' && 'id' in item && !('title' in item) &&
-    ('username' in item || 'stage_name' in item || 'avatar' in item || 'avatar_url' in item)
+function toSearchTrack(t: SearchTrackOut): Track {
+  const name = t.artist?.stage_name?.trim() || ''
+  return {
+    id: t.id,
+    title: t.title,
+    artist: name || 'Unknown Artist',
+    artistId: t.artist?.id ?? '',
+    // No username in the confirmed shape yet — best-effort slug from the
+    // stage name so "view artist" has something to navigate to; may not
+    // resolve until the backend adds a real username field here.
+    artistUsername: t.artist?.username?.trim() || (name ? slugifyArtistName(name) : undefined),
+    duration: 0,
+    audioUrl: '',
+    coverUrl: '',
+    genre: '',
+    playCount: t.play_count ?? 0,
+    likeCount: t.like_count ?? 0,
+    releaseDate: '',
+  }
 }
 
 function toSearchArtist(a: SearchArtistOut): NormalisedSearchArtist {
@@ -371,36 +403,21 @@ function toSearchArtist(a: SearchArtistOut): NormalisedSearchArtist {
   }
 }
 
-// TrackOut always carries `artist`; NEW_RELEASES never does — reuses the
-// same discriminator style as the rest of this file rather than a type tag.
-function toSearchTrack(t: TrackOut | NEW_RELEASES): Track {
-  return 'artist' in t ? normaliseTrack(t as TrackOut) : normaliseNewRelease(t as NEW_RELEASES)
-}
-
-/** Single point of reconciliation for /explore/search results — see the
- *  NOTE on GlobalSearchResult above for why this is defensive about shape. */
+/** Single point of reconciliation for /explore/search results. Reads the
+ *  confirmed `{ results: { tracks, artists, clips } }` envelope; still
+ *  tolerates a bare array or a top-level {tracks, artists} object (no
+ *  `results` wrapper) so a slightly different response doesn't break the
+ *  page outright. `clips` is parsed but intentionally not returned yet —
+ *  see SearchClipOut NOTE above. */
 export function normaliseSearchResults(raw: unknown): { tracks: Track[]; artists: NormalisedSearchArtist[] } {
-  if (!raw) return { tracks: [], artists: [] }
+  if (!raw || typeof raw !== 'object') return { tracks: [], artists: [] }
 
-  if (Array.isArray(raw)) {
-    const tracks: Track[] = []
-    const artists: NormalisedSearchArtist[] = []
-    for (const item of raw) {
-      if (searchItemIsTrack(item)) tracks.push(toSearchTrack(item))
-      else if (searchItemIsArtist(item)) artists.push(toSearchArtist(item))
-    }
-    return { tracks, artists }
+  const results = 'results' in (raw as any) ? (raw as GlobalSearchResponse).results : (raw as any)
+
+  return {
+    tracks: Array.isArray(results?.tracks) ? results.tracks.map(toSearchTrack) : [],
+    artists: Array.isArray(results?.artists) ? results.artists.map(toSearchArtist) : [],
   }
-
-  if (typeof raw === 'object') {
-    const obj = raw as GlobalSearchResult
-    return {
-      tracks: (obj.tracks ?? []).map(toSearchTrack),
-      artists: (obj.artists ?? []).map(toSearchArtist),
-    }
-  }
-
-  return { tracks: [], artists: [] }
 }
 
 // Legacy alias kept for pages that import AuthResponse
@@ -727,7 +744,7 @@ export const vibeApi = createApi({
 
     // ── Explore & Search ──────────────────────────────────────────
     getPersonalizedFeed: b.query<TrackOut[], void>({ query: () => '/explore/feed', providesTags: ['Track'] }),
-    globalSearch: b.query<unknown, string>({ query: (q) => `/explore/search?q=${encodeURIComponent(q)}` }),
+    globalSearch: b.query<GlobalSearchResponse, string>({ query: (q) => `/explore/search?q=${encodeURIComponent(q)}` }),
     getRisingStars: b.query<unknown, { limit?: number }>({ query: ({ limit = 10 }) => `/explore/rising-stars?limit=${limit}` }),
 
     // ── Public Profiles ───────────────────────────────────────────
