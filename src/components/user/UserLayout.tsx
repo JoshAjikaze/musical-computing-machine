@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { Outlet, Link, useLocation } from "react-router-dom"
-import { Home, Compass, Library, Plus, Heart, Menu, X, Search, Music2, BarChart2 } from "lucide-react"
+import { Home, Compass, Library, Plus, Heart, Menu, X, Music2, BarChart2 } from "lucide-react"
 import { AnimatePresence, motion } from "framer-motion"
 import { VibeGarageLogo } from "@/components/ui/logo"
 import { PlayerBar } from "@/components/app/PlayerBar"
@@ -9,6 +9,7 @@ import { CreatePlaylistDialog } from "@/components/app/CreatePlaylistDialog"
 import { useAppSelector } from "@/hooks/redux"
 import { useGetLikedTracksQuery } from "@/store/api/vibeApi"
 import { AvatarDropdown } from "@/components/app/AvatarDropdown"
+import { HeaderSearchInput } from "@/components/app/HeaderSearchInput"
 import { cn } from "@/lib/utils"
 
 const NAV_LINKS = [
@@ -207,12 +208,7 @@ export function UserLayout() {
               <Menu className="h-6 w-6" />
             </button>
 
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-vibe-text-muted" />
-              <input type="text" placeholder="Search"
-                className="w-full h-9 pl-9 pr-4 rounded-full bg-vibe-onyx-300 border border-vibe-onyx-400 text-sm text-vibe-text-primary placeholder:text-vibe-text-muted focus:outline-none focus:border-vibe-text-muted transition-colors"
-              />
-            </div>
+            <HeaderSearchInput basePath="/listen" className="flex-1 max-w-sm" inputClassName="h-9" />
 
             <div className="flex items-center gap-3 ml-auto">
               <AvatarDropdown profileHref="/listen/profile" logoutRedirect="/login" />

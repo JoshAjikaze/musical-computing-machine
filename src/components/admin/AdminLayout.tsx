@@ -7,6 +7,7 @@ import {
 } from "lucide-react"
 import { AnimatePresence, motion } from "framer-motion"
 import { VibeGarageLogo } from "@/components/ui/logo"
+import { HeaderSearchInput } from "@/components/app/HeaderSearchInput"
 import { useAppDispatch } from "@/hooks/redux"
 import { logout } from "@/store/slices/authSlice"
 import { cn } from "@/lib/utils"
@@ -197,6 +198,10 @@ export function AdminLayout() {
             <div className="h-4 w-px bg-vibe-onyx-400" />
             <span className="text-sm font-heading font-semibold text-vibe-text-secondary">Dashboard</span>
           </div>
+
+          {/* Search — reuses the same /explore/search results page as the
+              listener and artist headers (see SearchResultsPage). */}
+          <HeaderSearchInput basePath="/admin" className="flex-1 max-w-sm hidden md:block" inputClassName="h-9" />
 
           <div className="flex items-center gap-3 ml-auto">
             {/* Bell */}

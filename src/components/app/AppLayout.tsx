@@ -1,9 +1,10 @@
 import { useState } from "react"
 import { Outlet } from "react-router-dom"
-import { Menu, Search, Bell, ChevronDown, DollarSign, LogOut } from "lucide-react"
+import { Menu, Bell, ChevronDown, DollarSign, LogOut } from "lucide-react"
 import { AnimatePresence, motion } from "framer-motion"
 import { AppSidebar } from "@/components/app/AppSidebar"
 import { PlayerBar } from "@/components/app/PlayerBar"
+import { HeaderSearchInput } from "@/components/app/HeaderSearchInput"
 import { useAppDispatch, useAppSelector } from "@/hooks/redux"
 import { logout } from "@/store/slices/authSlice"
 import { cn } from "@/lib/utils"
@@ -35,14 +36,7 @@ export function AppLayout() {
           </button>
 
           {/* Search */}
-          <div className="relative flex-1 max-w-md hidden md:block">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-vibe-text-muted" />
-            <input
-              type="text"
-              placeholder="Search"
-              className="w-full h-10 pl-10 pr-4 rounded-full bg-vibe-onyx-300 border border-vibe-onyx-400 text-sm text-vibe-text-primary placeholder:text-vibe-text-muted focus:outline-none focus:border-vibe-text-muted transition-colors"
-            />
-          </div>
+          <HeaderSearchInput basePath="/app" className="flex-1 max-w-md hidden md:block" inputClassName="h-10" />
 
           <div className="flex items-center gap-3 ml-auto">
             {/* Avatar */}

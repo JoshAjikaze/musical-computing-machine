@@ -48,13 +48,17 @@ export function ArtistProfilePage() {
   }
 
   async function handleFollow() {
-    if (!profile?.id) return
+    const identifier = profile?.username?.trim()
+    if (!identifier) return
     requireAuth(async () => {
       try {
-        await followArtist(profile.id).unwrap()
+        // Single toggle endpoint — one call follows, the next unfollows.
+        // We flip local state on success rather than reading the response,
+        // since its shape isn't confirmed (see NOTE in vibeApi.ts).
+        await followArtist(identifier).unwrap()
         setFollowing((v) => !v)
       } catch {
-        toast.error("Could not follow artist")
+        toast.error(following ? "Could not unfollow artist" : "Could not follow artist")
       }
     })
   }

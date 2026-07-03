@@ -27,6 +27,7 @@ import { UserLibraryPage } from "./pages/user/UserLibraryPage"
 import { NowPlayingPage } from "./pages/user/NowPlayingPage"
 import { ArtistProfilePage } from "./pages/user/ArtistProfilePage"
 import { TrackPage } from "./pages/user/TrackPage"
+import { SearchResultsPage } from "./pages/SearchResultsPage"
 import { Footer } from "./components/features/footer/Footer"
 import { PrivacyPolicyPage } from "./pages/PrivacyPolicyPage"
 import { TermsAndConditionsPage } from "./pages/TermsAndConditionsPage"
@@ -104,6 +105,7 @@ function App() {
               <Route path="explore"   element={<Page><ExplorePage /></Page>} />
               <Route path="profile"   element={<Page><ProfilePage /></Page>} />
               <Route path="artist/:username" element={<Page><ArtistProfilePage /></Page>} />
+              <Route path="search"    element={<Page><SearchResultsPage /></Page>} />
               <Route path="support"   element={<Page><SupportPage /></Page>} />
             </Route>
 
@@ -123,6 +125,7 @@ function App() {
               <Route path="afrobeat-mixes" element={<Page><AfrobeatMixesPage /></Page>} />
               <Route path="popular-artists" element={<Page><PopularArtistsPage /></Page>} />
               <Route path="liked" element={<Page><LikedMusicPage /></Page>} />
+              <Route path="search" element={<Page><SearchResultsPage /></Page>} />
               <Route path="support" element={<Page><SupportPage /></Page>} />
             </Route>
 
@@ -138,6 +141,7 @@ function App() {
               <Route path="monetization" element={<Page><MonetizationPage /></Page>} />
               <Route path="reports"      element={<Page><ReportsAnalyticsPage /></Page>} />
               <Route path="content"      element={<Page><ContentModerationPage /></Page>} />
+              <Route path="search"       element={<Page><SearchResultsPage /></Page>} />
               <Route path="settings"     element={<Page><Placeholder title="Settings" /></Page>} />
               <Route path="support"      element={<Page><SupportPage /></Page>} />
             </Route>

@@ -24,7 +24,7 @@ import {
 } from '@reduxjs/toolkit/query/react'
 import type { RootState } from '../index'
 import { sessionExpired } from '../slices/authSlice'
-import { assetUrl } from '@/lib/utils'
+import { assetUrl, slugifyArtistName } from '@/lib/utils'
 
 // ─────────────────────────────────────────────────────────
 // Schema types matching the spec exactly
@@ -305,6 +305,104 @@ export function normaliseNewRelease(t: NEW_RELEASES, artistName = ""): Track {
   }
 }
 
+// ─────────────────────────────────────────────────────────
+// Global Search (/explore/search)
+// ─────────────────────────────────────────────────────────
+
+/**
+ * Artist shape as it might appear inside a /explore/search response.
+ * NOTE: not confirmed against a live response — modelled after the fields
+ * ArtistProfileOut and UserResponse already use elsewhere for an artist's
+ * identity (username / stage_name / avatar), since no sample response was
+ * available when this was written. Flagging per convention.
+ */
+export interface SearchArtistOut {
+  id: string
+  username?: string | null
+  stage_name?: string | null
+  avatar?: string | null
+  avatar_url?: string | null
+  is_verified?: boolean
+}
+
+/**
+ * NOTE: /explore/search's response envelope isn't confirmed either — this
+ * models the shape considered most likely (tracks + artists side by side,
+ * mirroring how the other Explore endpoints return tracks and the public
+ * artist endpoints return artist objects). normaliseSearchResults() below
+ * also tolerates a bare array (of tracks, artists, or a mix of both) so the
+ * UI doesn't break outright if the real contract turns out to be simpler —
+ * same "flag it, don't assume it silently" convention as elsewhere in this
+ * file. Adjust here first if the live response differs.
+ */
+export interface GlobalSearchResult {
+  tracks?: (TrackOut | NEW_RELEASES)[]
+  artists?: SearchArtistOut[]
+}
+
+/**
+ * Artist shape ArtistTile expects — structurally identical to ArtistTile's
+ * own PopularArtist type, so results from here can be passed straight into
+ * <ArtistTile artist={...} /> without an extra import or conversion.
+ */
+export interface NormalisedSearchArtist {
+  id: string
+  name: string
+  avatarUrl: string
+  usernameSlug: string
+}
+
+function searchItemIsTrack(item: any): item is TrackOut | NEW_RELEASES {
+  return !!item && typeof item === 'object' && 'id' in item && 'title' in item
+}
+
+function searchItemIsArtist(item: any): item is SearchArtistOut {
+  return !!item && typeof item === 'object' && 'id' in item && !('title' in item) &&
+    ('username' in item || 'stage_name' in item || 'avatar' in item || 'avatar_url' in item)
+}
+
+function toSearchArtist(a: SearchArtistOut): NormalisedSearchArtist {
+  const name = a.stage_name?.trim() || a.username?.trim() || 'Artist'
+  return {
+    id: a.id,
+    name,
+    avatarUrl: assetUrl(a.avatar ?? a.avatar_url ?? null),
+    usernameSlug: a.username?.trim() || slugifyArtistName(name),
+  }
+}
+
+// TrackOut always carries `artist`; NEW_RELEASES never does — reuses the
+// same discriminator style as the rest of this file rather than a type tag.
+function toSearchTrack(t: TrackOut | NEW_RELEASES): Track {
+  return 'artist' in t ? normaliseTrack(t as TrackOut) : normaliseNewRelease(t as NEW_RELEASES)
+}
+
+/** Single point of reconciliation for /explore/search results — see the
+ *  NOTE on GlobalSearchResult above for why this is defensive about shape. */
+export function normaliseSearchResults(raw: unknown): { tracks: Track[]; artists: NormalisedSearchArtist[] } {
+  if (!raw) return { tracks: [], artists: [] }
+
+  if (Array.isArray(raw)) {
+    const tracks: Track[] = []
+    const artists: NormalisedSearchArtist[] = []
+    for (const item of raw) {
+      if (searchItemIsTrack(item)) tracks.push(toSearchTrack(item))
+      else if (searchItemIsArtist(item)) artists.push(toSearchArtist(item))
+    }
+    return { tracks, artists }
+  }
+
+  if (typeof raw === 'object') {
+    const obj = raw as GlobalSearchResult
+    return {
+      tracks: (obj.tracks ?? []).map(toSearchTrack),
+      artists: (obj.artists ?? []).map(toSearchArtist),
+    }
+  }
+
+  return { tracks: [], artists: [] }
+}
+
 // Legacy alias kept for pages that import AuthResponse
 export interface AuthResponse { user: User; token: string }
 
@@ -477,10 +575,22 @@ export const vibeApi = createApi({
         url: `/public/artists/profile/${username}`,
         params: { json_mode: true },
       }),
-      providesTags: ['Dashboard'],
+      providesTags: (_r, _e, username) => [{ type: 'Artist', id: username }, 'Dashboard'],
     }),
-    followArtist: b.mutation<unknown, string>({ query: (id) => ({ url: `/artist/${id}/follow`, method: 'POST' }), invalidatesTags: ['Dashboard'] }),
-    getFollowStatus: b.query<unknown, string>({ query: (id) => `/artist/${id}/follow-status` }),
+    /**
+     * POST /public/artists/artist/{identifier}/follow
+     * One toggle endpoint — the same call both follows and unfollows,
+     * flipping whatever the current state is server-side. `identifier` is
+     * the artist's username, matching the "always username, never UUID"
+     * navigation convention used everywhere else artists are referenced.
+     * NOTE: the response body shape for the toggle isn't confirmed, so the
+     * caller (ArtistProfilePage) treats a successful call as "state
+     * flipped" rather than reading a field off the response.
+     */
+    followArtist: b.mutation<unknown, string>({
+      query: (identifier) => ({ url: `/public/artists/artist/${identifier}/follow`, method: 'POST' }),
+      invalidatesTags: (_r, _e, identifier) => [{ type: 'Artist', id: identifier }, 'Dashboard'],
+    }),
 
     setPaymentSettings: b.mutation<ArtistPaymentSettingsResponse, ArtistPaymentSettingsCreate>({
       query: (body) => ({ url: '/artist/payment-settings', method: 'POST', body }),
