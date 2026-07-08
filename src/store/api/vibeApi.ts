@@ -420,6 +420,23 @@ export function normaliseSearchResults(raw: unknown): { tracks: Track[]; artists
   }
 }
 
+/**
+ * GET /public/artists/all — response shape unconfirmed (no live sample
+ * available yet), so this reuses the same defensive approach as the rest
+ * of this file: accept a bare array, or an `{ artists: [...] }` /
+ * `{ results: [...] }` wrapper, and reconcile via the same artist-identity
+ * fields (id / username / stage_name / avatar) used for search results.
+ */
+export function normaliseArtistList(raw: unknown): NormalisedSearchArtist[] {
+  if (!raw) return []
+  const list =
+    Array.isArray(raw) ? raw :
+    Array.isArray((raw as any)?.artists) ? (raw as any).artists :
+    Array.isArray((raw as any)?.results) ? (raw as any).results :
+    []
+  return list.map(toSearchArtist)
+}
+
 // Legacy alias kept for pages that import AuthResponse
 export interface AuthResponse { user: User; token: string }
 
@@ -595,18 +612,37 @@ export const vibeApi = createApi({
       providesTags: (_r, _e, username) => [{ type: 'Artist', id: username }, 'Dashboard'],
     }),
     /**
-     * POST /public/artists/artist/{identifier}/follow
+     * GET /public/artists/artist/{artist_id}/follow → { isfollowed: boolean }
+     * Same path as the follow toggle below, keyed by artist id (confirmed —
+     * unlike most artist endpoints this one takes the id, not the username).
+     * Read on the artist profile page so the follow button reflects real
+     * state and survives a refresh instead of resetting to "not following".
+     */
+    getFollowStatus: b.query<{ isfollowed: boolean }, string>({
+      query: (artistId) => `/public/artists/artist/${artistId}/follow`,
+      providesTags: (_r, _e, artistId) => [{ type: 'Artist', id: artistId }],
+    }),
+    /**
+     * POST /public/artists/artist/{artist_id}/follow
      * One toggle endpoint — the same call both follows and unfollows,
-     * flipping whatever the current state is server-side. `identifier` is
-     * the artist's username, matching the "always username, never UUID"
-     * navigation convention used everywhere else artists are referenced.
-     * NOTE: the response body shape for the toggle isn't confirmed, so the
-     * caller (ArtistProfilePage) treats a successful call as "state
-     * flipped" rather than reading a field off the response.
+     * flipping whatever the current state is server-side.
+     * NOTE: the response body shape for the toggle itself isn't confirmed,
+     * so the caller (ArtistProfilePage) re-reads getFollowStatus after a
+     * successful call rather than trusting a field on the response.
      */
     followArtist: b.mutation<unknown, string>({
-      query: (identifier) => ({ url: `/public/artists/artist/${identifier}/follow`, method: 'POST' }),
-      invalidatesTags: (_r, _e, identifier) => [{ type: 'Artist', id: identifier }, 'Dashboard'],
+      query: (artistId) => ({ url: `/public/artists/artist/${artistId}/follow`, method: 'POST' }),
+      invalidatesTags: (_r, _e, artistId) => [{ type: 'Artist', id: artistId }, 'Dashboard'],
+    }),
+
+    /**
+     * GET /public/artists/all
+     * NOTE: response shape unconfirmed — see normaliseArtistList() for how
+     * this defensively handles a bare array vs an {artists:[...]} wrapper.
+     */
+    getAllArtists: b.query<unknown, void>({
+      query: () => '/public/artists/all',
+      providesTags: ['Artist'],
     }),
 
     setPaymentSettings: b.mutation<ArtistPaymentSettingsResponse, ArtistPaymentSettingsCreate>({
@@ -806,7 +842,7 @@ export const {
   useSubscribePushMutation, useUnsubscribePushMutation,
   useGetArtistDashboardQuery, useGetArtistPremiumDashboardQuery,
   useUploadTrackArtistMutation, useGetArtistStatsQuery,
-  useGetArtistProfileQuery, useFollowArtistMutation,
+  useGetArtistProfileQuery, useFollowArtistMutation, useGetFollowStatusQuery, useGetAllArtistsQuery,
   useSetPaymentSettingsMutation, useGetPaymentSettingsQuery,
   useRequestPayoutMutation, useGetMyPayoutsQuery,
   useUploadTrackMutation, useStreamTrackQuery, useDownloadTrackQuery,

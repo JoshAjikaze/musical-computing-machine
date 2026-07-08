@@ -10,7 +10,7 @@
 import { clientsClaim } from 'workbox-core'
 import { precacheAndRoute, createHandlerBoundToURL } from 'workbox-precaching'
 import { registerRoute, NavigationRoute } from 'workbox-routing'
-import { CacheFirst, NetworkFirst, StaleWhileRevalidate } from 'workbox-strategies'
+import { CacheFirst, NetworkFirst, NetworkOnly, StaleWhileRevalidate } from 'workbox-strategies'
 import { ExpirationPlugin } from 'workbox-expiration'
 import { CacheableResponsePlugin } from 'workbox-cacheable-response'
 import { RangeRequestsPlugin } from 'workbox-range-requests'
@@ -61,6 +61,26 @@ registerRoute(
       }),
     ],
   })
+)
+
+// ─────────────────────────────────────────────────────────
+// Google AdSense — never cache. Registered ahead of the image/API rules
+// below (Workbox matches routes in registration order, first match wins)
+// so an ad request never falls through to the generic image
+// StaleWhileRevalidate rule. Ads must always be fetched fresh, and
+// caching third-party ad responses violates AdSense policy anyway — this
+// is a deliberate passthrough, not a caching strategy.
+// ─────────────────────────────────────────────────────────
+const ADSENSE_HOSTNAMES = [
+  'googlesyndication.com',
+  'doubleclick.net',
+  'googleadservices.com',
+  'googletagservices.com',
+]
+
+registerRoute(
+  ({ url }) => ADSENSE_HOSTNAMES.some((h) => url.hostname === h || url.hostname.endsWith(`.${h}`)),
+  new NetworkOnly()
 )
 
 // ─────────────────────────────────────────────────────────

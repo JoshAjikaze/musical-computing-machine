@@ -61,6 +61,17 @@ export function ProfilePage() {
   // Desktop always shows a tab; default to "general"
   const desktopTab = activeTab ?? "general"
 
+  // Monetization payouts aren't backed by a real endpoint yet — rather than
+  // let people fill out bank details that go nowhere, the tab itself is
+  // gated behind a "coming soon" notice instead of switching to it.
+  function handleTabClick(tab: ProfileTab) {
+    if (tab === "monetization") {
+      toast.info("Monetization is coming soon")
+      return
+    }
+    setActiveTab(tab)
+  }
+
   function TabContent({ tab }: { tab: ProfileTab }) {
     return (
       <AnimatePresence mode="wait">
@@ -93,7 +104,7 @@ export function ProfilePage() {
             {tabs.map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => handleTabClick(tab.id)}
                 className={cn(
                   "w-full text-left px-4 py-3 rounded-md text-sm font-medium transition-colors duration-150",
                   desktopTab === tab.id
@@ -127,7 +138,7 @@ export function ProfilePage() {
               {tabs.map((tab, i) => (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
+                  onClick={() => handleTabClick(tab.id)}
                   className={cn(
                     "flex items-center justify-between w-full px-4 py-4 text-sm font-medium text-vibe-text-secondary hover:text-white hover:bg-vibe-onyx-300/40 transition-colors",
                     i < tabs.length - 1 && "border-b border-vibe-onyx-400/50"

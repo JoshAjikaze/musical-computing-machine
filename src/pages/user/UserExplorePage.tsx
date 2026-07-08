@@ -7,6 +7,7 @@ import { useAppDispatch } from "@/hooks/redux"
 import { playTrack } from "@/store/slices/playerSlice"
 import { vibeApi, type Track, normaliseTrack } from "@/store/api/vibeApi"
 import { ArtistTile, deriveArtistsFromTracks } from "@/components/app/ArtistTile"
+import { AdSlot } from "@/components/app/AdSlot"
 import { GetVCoinsButton } from "@/components/app/GetVCoinsButton"
 import { formatPlays } from "@/lib/formatters"
 import { cn } from "@/lib/utils"
@@ -165,6 +166,14 @@ export function UserExplorePage() {
           </AnimatePresence>
         )}
       </div>
+
+      {/* Example ad placement — deliberately between content sections, well
+          away from PlayerBar/QueuePanel/NowPlayingSidebar to avoid
+          accidental-click layouts AdSense's policy flags. Renders nothing
+          until VITE_ADSENSE_PUBLISHER_ID is set (see lib/adsense.ts).
+          NOTE: "0000000000" is a placeholder — swap in a real ad unit's
+          data-ad-slot ID from the AdSense dashboard once one exists. */}
+      <AdSlot slot="0000000000" className="my-2" />
 
       {/* Popular Artists — derived from the same tracksDisplayed above */}
       <section>

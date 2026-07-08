@@ -22,8 +22,20 @@ function formatTime(s: number) {
   return `${Math.floor(s / 60)}:${Math.floor(s % 60).toString().padStart(2, "0")}`
 }
 
-export function NowPlayingPage() {
-  const navigate   = useNavigate()
+/**
+ * Shared now-playing UI — used both by the full-route NowPlayingPage
+ * (mobile "expand" experience, its own back control) and by
+ * NowPlayingSidebar (a docked panel usable from any route without
+ * navigating away, per product ask). `onClose` decides what "back"/collapse
+ * does in each context; the rest of the component is identical either way.
+ */
+export function NowPlayingBody({
+  onClose,
+  className,
+}: {
+  onClose: () => void
+  className?: string
+}) {
   const dispatch   = useAppDispatch()
   const {
     currentTrack, isPlaying, volume, isMuted,
@@ -138,7 +150,7 @@ export function NowPlayingPage() {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 30 }}
       transition={{ duration: 0.35, ease: [0.32, 0, 0.17, 1] }}
-      className="relative flex flex-col min-h-full bg-vibe-onyx overflow-hidden"
+      className={cn("relative flex flex-col min-h-full bg-vibe-onyx overflow-hidden", className)}
     >
       {/* ── Ambient background blur from cover art ── */}
       <AnimatePresence mode="wait">
@@ -168,7 +180,7 @@ export function NowPlayingPage() {
         {/* Top bar */}
         <div className="flex items-center justify-between pt-5 pb-4">
           <button
-            onClick={() => navigate(-1)}
+            onClick={onClose}
             className="h-9 w-9 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/20 transition-colors"
           >
             <ChevronDown className="h-5 w-5" />
@@ -343,4 +355,11 @@ export function NowPlayingPage() {
       </div>
     </motion.div>
   )
+}
+
+/** Full-route wrapper — used at /listen/now-playing. Back button pops the
+ *  browser history entry it was pushed with, as before. */
+export function NowPlayingPage() {
+  const navigate = useNavigate()
+  return <NowPlayingBody onClose={() => navigate(-1)} />
 }

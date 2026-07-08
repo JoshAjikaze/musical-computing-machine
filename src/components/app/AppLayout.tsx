@@ -4,6 +4,7 @@ import { Menu, Bell, ChevronDown, DollarSign, LogOut } from "lucide-react"
 import { AnimatePresence, motion } from "framer-motion"
 import { AppSidebar } from "@/components/app/AppSidebar"
 import { PlayerBar } from "@/components/app/PlayerBar"
+import { NowPlayingSidebar } from "@/components/app/NowPlayingSidebar"
 import { HeaderSearchInput } from "@/components/app/HeaderSearchInput"
 import { useAppDispatch, useAppSelector } from "@/hooks/redux"
 import { logout } from "@/store/slices/authSlice"
@@ -87,6 +88,9 @@ export function AppLayout() {
           <Outlet />
         </main>
       </div>
+
+      {/* Now playing — docked sidebar, works from any route */}
+      <NowPlayingSidebar />
 
       {/* Player bar — inset from left to not overlap sidebar */}
       <div className="fixed bottom-0 left-0 md:left-64 right-0 z-30">

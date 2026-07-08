@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { motion } from "framer-motion"
 import {
@@ -11,6 +11,7 @@ import { playTrack, togglePlay } from "@/store/slices/playerSlice"
 import {
   useGetArtistProfileQuery,
   useFollowArtistMutation,
+  useGetFollowStatusQuery,
 } from "@/store/api/vibeApi"
 import { assetUrl, cn } from "@/lib/utils"
 import { formatDuration } from "@/lib/formatters"
@@ -30,13 +31,23 @@ export function ArtistProfilePage() {
   const { isAuthenticated } = useAppSelector((s) => s.auth)
   const { currentTrack, isPlaying } = useAppSelector((s) => s.player)
 
-  const [following, setFollowing] = useState(false)
+  const [optimisticFollowing, setOptimisticFollowing] = useState<boolean | null>(null)
   const [shareOpen, setShareOpen] = useState(false)
 
   const { data: profile, isLoading, isError } =
     useGetArtistProfileQuery(username ?? "", { skip: !username })
 
-  const [followArtist, { isLoading: isFollowing }] = useFollowArtistMutation()
+  const artistId = profile?.id
+  // GET /public/artists/artist/{artist_id}/follow → { isfollowed }. Source
+  // of truth for the button's state, so it no longer resets on refresh.
+  const { data: followStatus } = useGetFollowStatusQuery(artistId ?? "", { skip: !artistId })
+  const [followArtist, { isLoading: isTogglingFollow }] = useFollowArtistMutation()
+
+  // Clear the optimistic overlay once the real status catches up (either
+  // confirming it or, on failure, reverting to what the server actually has).
+  useEffect(() => { setOptimisticFollowing(null) }, [followStatus?.isfollowed])
+
+  const following = optimisticFollowing ?? followStatus?.isfollowed ?? false
 
   function requireAuth(action: () => void) {
     if (!isAuthenticated) {
@@ -48,17 +59,17 @@ export function ArtistProfilePage() {
   }
 
   async function handleFollow() {
-    const identifier = profile?.username?.trim()
-    if (!identifier) return
+    if (!artistId) return
     requireAuth(async () => {
+      const next = !following
+      // Optimistic flip for instant feedback; the effect above clears this
+      // once getFollowStatus re-fetches (triggered by invalidatesTags).
+      setOptimisticFollowing(next)
       try {
-        // Single toggle endpoint — one call follows, the next unfollows.
-        // We flip local state on success rather than reading the response,
-        // since its shape isn't confirmed (see NOTE in vibeApi.ts).
-        await followArtist(identifier).unwrap()
-        setFollowing((v) => !v)
+        await followArtist(artistId).unwrap()
       } catch {
-        toast.error(following ? "Could not unfollow artist" : "Could not follow artist")
+        setOptimisticFollowing(!next)
+        toast.error(next ? "Could not follow artist" : "Could not unfollow artist")
       }
     })
   }
@@ -184,7 +195,7 @@ export function ArtistProfilePage() {
               rounded="full"
               variant={following ? "outline" : "default"}
               onClick={handleFollow}
-              loading={isFollowing}
+              loading={isTogglingFollow}
               className="min-w-[90px]"
             >
               {following ? "Following" : "Follow"}

@@ -1,10 +1,11 @@
 import { useState } from "react"
 import { Outlet, Link, useLocation } from "react-router-dom"
-import { Home, Compass, Library, Plus, Heart, Menu, X, Music2, BarChart2 } from "lucide-react"
+import { Home, Compass, Library, Plus, Heart, Menu, X, Music2, BarChart2, Users } from "lucide-react"
 import { AnimatePresence, motion } from "framer-motion"
 import { VibeGarageLogo } from "@/components/ui/logo"
 import { PlayerBar } from "@/components/app/PlayerBar"
 import { QueuePanel } from "@/components/app/QueuePanel"
+import { NowPlayingSidebar } from "@/components/app/NowPlayingSidebar"
 import { CreatePlaylistDialog } from "@/components/app/CreatePlaylistDialog"
 import { useAppSelector } from "@/hooks/redux"
 import { useGetLikedTracksQuery } from "@/store/api/vibeApi"
@@ -16,6 +17,7 @@ const NAV_LINKS = [
   { href: "/listen", label: "Home", icon: Home },
   { href: "/listen/explore", label: "Explore", icon: Compass },
   { href: "/listen/library", label: "Library", icon: Library },
+  { href: "/listen/artists", label: "Artists", icon: Users },
 ]
 
 // ── Sidebar ───────────────────────────────────────────────
@@ -228,6 +230,9 @@ export function UserLayout() {
 
       {/* Queue panel — slides in over the player */}
       <QueuePanel />
+
+      {/* Now playing — docked sidebar, works from any route */}
+      <NowPlayingSidebar />
 
       {/* Player bar */}
       {!isNowPlaying && (

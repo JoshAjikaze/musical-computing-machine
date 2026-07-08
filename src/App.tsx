@@ -22,6 +22,7 @@ import { UserExplorePage } from "./pages/user/UserExplorePage"
 import { CollectionPage } from "./pages/user/CollectionPage"
 import { AfrobeatMixesPage } from "./pages/user/AfrobeatMixesPage"
 import { PopularArtistsPage } from "./pages/user/PopularArtistsPage"
+import { AllArtistsPage } from "./pages/user/AllArtistsPage"
 import { LikedMusicPage } from "./pages/user/LikedMusicPage"
 import { UserLibraryPage } from "./pages/user/UserLibraryPage"
 import { NowPlayingPage } from "./pages/user/NowPlayingPage"
@@ -43,6 +44,8 @@ import { AudioEngine } from "./components/app/AudioEngine"
 import { PWAUpdatePrompt } from "./components/app/PWAUpdatePrompt"
 import { AuthGuard } from "./components/app/AuthGuard"
 import { ProtectedRoute } from "./components/auth/ProtectedRoute"
+import { useEffect } from "react"
+import { loadAdSenseScript } from "./lib/adsense"
 
 const AUTH_ROUTES = ["/login", "/join", "/verify", "/forgot-password"]
 const APP_ROUTES  = ["/app", "/listen", "/admin"]
@@ -61,6 +64,10 @@ function Page({ children }: { children: React.ReactNode }) {
 }
 
 function App() {
+  // Loads the AdSense script once, app-wide — a no-op until
+  // VITE_ADSENSE_PUBLISHER_ID is set (see lib/adsense.ts).
+  useEffect(() => { loadAdSenseScript() }, [])
+
   return (
     <ErrorBoundary>
       <Provider store={store}>
@@ -124,6 +131,7 @@ function App() {
               <Route path="collection/:section" element={<Page><CollectionPage /></Page>} />
               <Route path="afrobeat-mixes" element={<Page><AfrobeatMixesPage /></Page>} />
               <Route path="popular-artists" element={<Page><PopularArtistsPage /></Page>} />
+              <Route path="artists" element={<Page><AllArtistsPage /></Page>} />
               <Route path="liked" element={<Page><LikedMusicPage /></Page>} />
               <Route path="search" element={<Page><SearchResultsPage /></Page>} />
               <Route path="support" element={<Page><SupportPage /></Page>} />

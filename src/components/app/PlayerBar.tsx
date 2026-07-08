@@ -1,10 +1,9 @@
 import { useRef, useState, useEffect, useCallback } from "react"
-import { useNavigate } from "react-router-dom"
 import { SkipBack, Play, Pause, SkipForward, Heart, Volume2, VolumeX, ChevronUp } from "lucide-react"
 import { useAppDispatch, useAppSelector } from "@/hooks/redux"
 import {
   togglePlay, nextTrack, prevTrack,
-  setVolume, toggleMute, setProgress,
+  setVolume, toggleMute, setProgress, toggleNowPlayingPanel,
 } from "@/store/slices/playerSlice"
 import { useLikeTrackMutation, useGetLikedTracksQuery } from "@/store/api/vibeApi"
 import { seekAudio } from "@/components/app/AudioEngine"
@@ -18,7 +17,6 @@ function formatTime(s: number) {
 
 export function PlayerBar() {
   const dispatch = useAppDispatch()
-  const navigate = useNavigate()
   const { currentTrack, isPlaying, volume, isMuted, progress, duration } =
     useAppSelector((s) => s.player)
 
@@ -112,7 +110,9 @@ export function PlayerBar() {
     }
   }, [handleTouchStart, handleTouchMove, handleTouchEnd])
 
-  const goToNowPlaying = () => currentTrack && navigate("/listen/now-playing")
+  // Opens the docked sidebar (NowPlayingSidebar) instead of switching
+  // routes — works the same from any page within a shell.
+  const goToNowPlaying = () => currentTrack && dispatch(toggleNowPlayingPanel())
 
   return (
     <div

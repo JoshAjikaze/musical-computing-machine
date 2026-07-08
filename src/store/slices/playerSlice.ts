@@ -15,6 +15,7 @@ interface PlayerState {
   repeatMode: RepeatMode
   isShuffle: boolean
   isQueueVisible: boolean
+  isNowPlayingVisible: boolean
 }
 
 const initialState: PlayerState = {
@@ -29,6 +30,7 @@ const initialState: PlayerState = {
   repeatMode: 'off',
   isShuffle: false,
   isQueueVisible: false,
+  isNowPlayingVisible: false,
 }
 
 export const playerSlice = createSlice({
@@ -114,6 +116,14 @@ export const playerSlice = createSlice({
     },
     toggleQueuePanel(state) {
       state.isQueueVisible = !state.isQueueVisible
+      if (state.isQueueVisible) state.isNowPlayingVisible = false
+    },
+    toggleNowPlayingPanel(state) {
+      state.isNowPlayingVisible = !state.isNowPlayingVisible
+      if (state.isNowPlayingVisible) state.isQueueVisible = false
+    },
+    closeNowPlayingPanel(state) {
+      state.isNowPlayingVisible = false
     },
   },
 })
@@ -134,6 +144,8 @@ export const {
   addToQueue,
   clearQueue,
   toggleQueuePanel,
+  toggleNowPlayingPanel,
+  closeNowPlayingPanel,
 } = playerSlice.actions
 
 export default playerSlice.reducer

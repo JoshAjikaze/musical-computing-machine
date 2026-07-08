@@ -1,1 +1,13 @@
-google.com, pub-4193125375873257, DIRECT, f08c47fec0942fa0
+# AdSense requires an ads.txt file at the site root declaring authorized
+# ad sellers — this is how ad buyers verify they're buying inventory from
+# the real publisher, not a spoofed domain. Without a correct entry here,
+# AdSense will flag the account and may stop serving ads.
+#
+# Replace pub-XXXXXXXXXXXXXXXX with your real AdSense publisher ID (same
+# value as VITE_ADSENSE_PUBLISHER_ID) once approved, then remove the
+# leading "# " from the line below. The ID's format and the rest of the
+# line ("DIRECT, f08c47fec0942fa0") come straight from your AdSense
+# dashboard under Sites > "View site" > ads.txt snippet — copy it exactly
+# rather than retyping.
+#
+# google.com, pub-XXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0

@@ -43,7 +43,45 @@ export function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="font-heading text-base font-semibold text-white mb-3">6. Contact</h2>
+            <h2 className="font-heading text-base font-semibold text-white mb-3">6. Advertising & Cookies</h2>
+            <p>
+              Vibe Garage may display advertisements served by Google AdSense. Google and its
+              partners use cookies and similar technologies to serve ads based on your prior
+              visits to this and other websites. You can opt out of personalised advertising by
+              visiting{" "}
+              <a
+                href="https://adssettings.google.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-vibe-amber hover:underline"
+              >
+                Google Ads Settings
+              </a>
+              , or opt out of third-party vendors' use of cookies for personalised advertising by
+              visiting{" "}
+              <a
+                href="https://optout.aboutads.info"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-vibe-amber hover:underline"
+              >
+                www.aboutads.info
+              </a>
+              . For more on how Google uses information from sites that use its services, see{" "}
+              <a
+                href="https://policies.google.com/technologies/partner-sites"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-vibe-amber hover:underline"
+              >
+                How Google uses information from sites or apps that use our services
+              </a>
+              .
+            </p>
+          </section>
+
+          <section>
+            <h2 className="font-heading text-base font-semibold text-white mb-3">7. Contact</h2>
             <p>
               For privacy-related enquiries, please contact us at{" "}
               <a href="mailto:Hello@vibegarage.app" className="text-vibe-amber hover:underline">
