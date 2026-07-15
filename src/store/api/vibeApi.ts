@@ -219,10 +219,10 @@ export function normaliseUser(u: UserResponse): User {
   const role = u.role === 'ARTIST' ? 'artist' : u.role === 'ADMIN' ? 'admin' : 'fan'
   // Best display name: stage_name > display_name > full_name > username > email prefix
   const displayName =
-    u.stage_name?.trim()    ||
-    u.display_name?.trim()  ||
-    u.full_name?.trim()     ||
-    u.username              ||
+    u.stage_name?.trim() ||
+    u.display_name?.trim() ||
+    u.full_name?.trim() ||
+    u.username ||
     u.email.split('@')[0]
   return {
     id: u.id,
@@ -263,21 +263,21 @@ function resolveArtistName(t: TrackOut, fallback = ""): string {
  */
 export function normaliseTrack(t: TrackOut, artistName = ""): Track {
   return {
-    id:             t.id,
-    title:          t.title,
-    artist:         resolveArtistName(t, artistName),
-    artistId:       t.artist_id ?? "",
+    id: t.id,
+    title: t.title,
+    artist: resolveArtistName(t, artistName),
+    artistId: t.artist_id ?? "",
     artistUsername: (t as any).artist_username ?? undefined,
-    album:          t.album,
-    duration:       t.duration ?? 0,
-    audioUrl:       assetUrl(t.audio_path),
-    coverUrl:       assetUrl(t.cover_path),
-    genre:          t.genre ?? "",
-    playCount:      t.plays,
-    likeCount:      t.likes,
-    releaseDate:    t.releaseDate ?? "",
-    isPremium:      t.is_for_sale,
-    isLiked:        t.isLiked,
+    album: t.album,
+    duration: t.duration ?? 0,
+    audioUrl: assetUrl(t.audio_path),
+    coverUrl: assetUrl(t.cover_path),
+    genre: t.genre ?? "",
+    playCount: t.plays,
+    likeCount: t.likes,
+    releaseDate: t.releaseDate ?? "",
+    isPremium: t.is_for_sale,
+    isLiked: t.isLiked,
   }
 }
 
@@ -431,9 +431,9 @@ export function normaliseArtistList(raw: unknown): NormalisedSearchArtist[] {
   if (!raw) return []
   const list =
     Array.isArray(raw) ? raw :
-    Array.isArray((raw as any)?.artists) ? (raw as any).artists :
-    Array.isArray((raw as any)?.results) ? (raw as any).results :
-    []
+      Array.isArray((raw as any)?.artists) ? (raw as any).artists :
+        Array.isArray((raw as any)?.results) ? (raw as any).results :
+          []
   return list.map(toSearchArtist)
 }
 
@@ -445,7 +445,7 @@ export interface AuthResponse { user: User; token: string }
 // ─────────────────────────────────────────────────────────
 const rawBase = fetchBaseQuery({
   baseUrl: (import.meta as unknown as { env: Record<string, string> }).env.VITE_API_BASE_URL
-    ?? 'https://vibegarage-backend.onrender.com',
+    ?? 'https://apivibegarage.app',
   prepareHeaders: (headers, { getState }) => {
     const token = (getState() as RootState).auth.token
     if (token) headers.set('Authorization', `Bearer ${token}`)

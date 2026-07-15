@@ -46,7 +46,7 @@ export function Footer() {
                 </li>
                 <li>
                   <a
-                    href="mailto:Hello@vibegarage.app"
+                    href="mailto:support@vibegarage.app"
                     className="text-sm text-white hover:text-vibe-text-secondary transition-colors duration-150"
                   >
                     Support
