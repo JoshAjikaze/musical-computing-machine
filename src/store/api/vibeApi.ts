@@ -445,7 +445,7 @@ export interface AuthResponse { user: User; token: string }
 // ─────────────────────────────────────────────────────────
 const rawBase = fetchBaseQuery({
   baseUrl: (import.meta as unknown as { env: Record<string, string> }).env.VITE_API_BASE_URL
-    ?? 'https://apivibegarage.app',
+    ?? 'https://api.vibegarage.app',
   prepareHeaders: (headers, { getState }) => {
     const token = (getState() as RootState).auth.token
     if (token) headers.set('Authorization', `Bearer ${token}`)
