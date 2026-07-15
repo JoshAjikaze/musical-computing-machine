@@ -11,6 +11,7 @@
  * live, deployed site (see the requirements list this was scoped from).
  * There's no real ID to bake in here.
  */
+import { getStoredAdConsent, setStoredAdConsent, type AdConsent } from './consent'
 
 export const ADSENSE_PUBLISHER_ID = import.meta.env.VITE_ADSENSE_PUBLISHER_ID as string | undefined
 
@@ -18,8 +19,31 @@ export const isAdSenseConfigured = !!ADSENSE_PUBLISHER_ID?.trim()
 
 declare global {
   interface Window {
-    adsbygoogle: unknown[]
+    // Loosely typed as `any` — this is Google's own ad-queue array, which
+    // also carries extra flags (requestNonPersonalizedAds) set directly on
+    // the same object. Not worth a stricter type for a third-party global
+    // we don't control the shape of.
+    adsbygoogle: any
   }
+}
+
+/**
+ * Ensures window.adsbygoogle exists and carries the current consent choice
+ * BEFORE anything pushes to it. Idempotent — safe to call from both
+ * loadAdSenseScript() and every AdSlot mount, regardless of which runs
+ * first (React doesn't guarantee parent-before-child effect order).
+ *
+ * Defaults to non-personalized ads (requestNonPersonalizedAds = 1) until
+ * the person has explicitly chosen "personalized" via ConsentBanner — a
+ * no-consent-yet state should never mean "assume it's fine to personalize".
+ * This is Google's documented lightweight alternative to a full CMP
+ * integration (see: "Restrict data processing" / non-personalized ads).
+ */
+export function ensureAdsQueue() {
+  if (typeof window === 'undefined') return
+  window.adsbygoogle = window.adsbygoogle || []
+  const consent = getStoredAdConsent()
+  window.adsbygoogle.requestNonPersonalizedAds = consent === 'personalized' ? 0 : 1
 }
 
 let scriptRequested = false
@@ -32,6 +56,7 @@ let scriptRequested = false
 export function loadAdSenseScript() {
   if (scriptRequested || !isAdSenseConfigured || typeof document === 'undefined') return
   scriptRequested = true
+  ensureAdsQueue()
 
   const script = document.createElement('script')
   script.async = true
@@ -39,3 +64,16 @@ export function loadAdSenseScript() {
   script.crossOrigin = 'anonymous'
   document.head.appendChild(script)
 }
+
+/**
+ * Called by ConsentBanner when the person makes a choice. Persists it and
+ * updates the live flag immediately — takes effect for ad requests made
+ * from this point on. Slots already rendered before the choice was made
+ * aren't retroactively swapped (AdSense doesn't support that mid-session);
+ * in practice the banner shows before any ad has had a chance to load.
+ */
+export function updateAdConsent(consent: AdConsent) {
+  setStoredAdConsent(consent)
+  ensureAdsQueue()
+}
+

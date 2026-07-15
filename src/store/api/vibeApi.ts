@@ -612,27 +612,32 @@ export const vibeApi = createApi({
       providesTags: (_r, _e, username) => [{ type: 'Artist', id: username }, 'Dashboard'],
     }),
     /**
-     * GET /public/artists/artist/{artist_id}/follow → { isfollowed: boolean }
-     * Same path as the follow toggle below, keyed by artist id (confirmed —
-     * unlike most artist endpoints this one takes the id, not the username).
-     * Read on the artist profile page so the follow button reflects real
-     * state and survives a refresh instead of resetting to "not following".
+     * GET /public/artists/artist/{username}/follow-status → { isfollowed: boolean }
+     * Confirmed — its own path, keyed by username (not artist_id, unlike
+     * the toggle below). Read on the artist profile page so the follow
+     * button reflects real state and survives a refresh instead of
+     * resetting to "not following".
      */
     getFollowStatus: b.query<{ isfollowed: boolean }, string>({
-      query: (artistId) => `/public/artists/artist/${artistId}/follow`,
-      providesTags: (_r, _e, artistId) => [{ type: 'Artist', id: artistId }],
+      query: (username) => `/public/artists/artist/${username}/follow-status`,
+      providesTags: (_r, _e, username) => [{ type: 'Artist', id: username }],
     }),
     /**
      * POST /public/artists/artist/{artist_id}/follow
      * One toggle endpoint — the same call both follows and unfollows,
-     * flipping whatever the current state is server-side.
+     * flipping whatever the current state is server-side. Keyed by
+     * artist_id, which is a *different* identifier than getFollowStatus
+     * above (username) — so invalidation here can't target a specific
+     * tag id the way it usually would; it invalidates the whole 'Artist'
+     * tag type instead, which catches getFollowStatus (and getArtistProfile)
+     * regardless of which id they were queried with.
      * NOTE: the response body shape for the toggle itself isn't confirmed,
      * so the caller (ArtistProfilePage) re-reads getFollowStatus after a
      * successful call rather than trusting a field on the response.
      */
     followArtist: b.mutation<unknown, string>({
       query: (artistId) => ({ url: `/public/artists/artist/${artistId}/follow`, method: 'POST' }),
-      invalidatesTags: (_r, _e, artistId) => [{ type: 'Artist', id: artistId }, 'Dashboard'],
+      invalidatesTags: ['Artist', 'Dashboard'],
     }),
 
     /**

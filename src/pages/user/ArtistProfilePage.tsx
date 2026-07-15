@@ -38,9 +38,11 @@ export function ArtistProfilePage() {
     useGetArtistProfileQuery(username ?? "", { skip: !username })
 
   const artistId = profile?.id
-  // GET /public/artists/artist/{artist_id}/follow → { isfollowed }. Source
-  // of truth for the button's state, so it no longer resets on refresh.
-  const { data: followStatus } = useGetFollowStatusQuery(artistId ?? "", { skip: !artistId })
+  // GET /public/artists/artist/{username}/follow-status → { isfollowed }.
+  // Source of truth for the button's state, so it no longer resets on
+  // refresh. Keyed by username — a different identifier than the follow
+  // toggle below, which takes artist_id (see NOTE in vibeApi.ts).
+  const { data: followStatus } = useGetFollowStatusQuery(username ?? "", { skip: !username })
   const [followArtist, { isLoading: isTogglingFollow }] = useFollowArtistMutation()
 
   // Clear the optimistic overlay once the real status catches up (either

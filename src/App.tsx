@@ -43,6 +43,7 @@ import { Toaster } from "./components/ui/sonner"
 import { AudioEngine } from "./components/app/AudioEngine"
 import { PWAUpdatePrompt } from "./components/app/PWAUpdatePrompt"
 import { AuthGuard } from "./components/app/AuthGuard"
+import { ConsentBanner } from "./components/app/ConsentBanner"
 import { ProtectedRoute } from "./components/auth/ProtectedRoute"
 import { useEffect } from "react"
 import { loadAdSenseScript } from "./lib/adsense"
@@ -78,6 +79,7 @@ function App() {
             <PWAUpdatePrompt />
             <AuthGuard />
             <Toaster />
+            <ConsentBanner />
             <Routes>
               {/* Public */}
             <Route path="/"                    element={<Page><LandingPage /></Page>} />

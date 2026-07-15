@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef } from "react"
-import { ADSENSE_PUBLISHER_ID, isAdSenseConfigured } from "@/lib/adsense"
+import { ADSENSE_PUBLISHER_ID, isAdSenseConfigured, ensureAdsQueue } from "@/lib/adsense"
 import { cn } from "@/lib/utils"
 
 /**
@@ -34,7 +34,7 @@ export function AdSlot({
   useEffect(() => {
     if (!isAdSenseConfigured || pushedRef.current || !insRef.current) return
     try {
-      window.adsbygoogle = window.adsbygoogle || []
+      ensureAdsQueue()
       window.adsbygoogle.push({})
       pushedRef.current = true
     } catch {
