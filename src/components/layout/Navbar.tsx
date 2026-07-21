@@ -14,15 +14,15 @@ import { cn } from "@/lib/utils"
  */
 const NAV_LINKS = [
   { label: "Download", action: "install" as const },
-  { label: "FAQ",       action: "scroll" as const, href: "#faq" },
+  { label: "FAQ", action: "scroll" as const, href: "#faq" },
 ]
 
 export function Navbar() {
   const location = useLocation()
-  const navigate  = useNavigate()
+  const navigate = useNavigate()
   const { isAuthenticated } = useAppSelector((s) => s.auth)
-  const [isScrolled, setIsScrolled]   = useState(false)
-  const [mobileOpen, setMobileOpen]   = useState(false)
+  const [isScrolled, setIsScrolled] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
   const [installOpen, setInstallOpen] = useState(false)
 
   useEffect(() => {
@@ -68,6 +68,11 @@ export function Navbar() {
                 {link.label}
               </button>
             ))}
+            <button
+              className="text-sm font-body font-medium text-white hover:text-vibe-text-secondary transition-colors"
+            >
+              Blog
+            </button>
             {isAuthenticated && (
               <button
                 onClick={() => navigate("/listen")}

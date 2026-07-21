@@ -7,6 +7,7 @@ import { StatCard } from "@/components/app/StatCard"
 import { useAppSelector } from "@/hooks/redux"
 import { useGetArtistStatsQuery, useGetMyTracksQuery, normaliseTrack } from "@/store/api/vibeApi"
 import { formatCurrency, formatPlays } from "@/lib/formatters"
+import { Button } from "@/components/ui/button"
 
 // ── Custom tooltip ────────────────────────────────────────
 function ChartTooltip({ active, payload, label }: {
@@ -74,11 +75,21 @@ export function EarningsPage() {
     <div className="px-4 md:px-8 py-6 space-y-6">
 
       {/* Header */}
-      <div>
-        <h1 className="font-heading text-2xl font-bold text-white">Earnings</h1>
-        <p className="text-sm text-vibe-text-secondary mt-0.5 max-w-xl">
-          Here you can track your financial performance, including total earnings, downloads, streams, and more
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="font-heading text-2xl font-bold text-white">Earnings</h1>
+          <p className="text-sm text-vibe-text-secondary mt-0.5 max-w-xl">
+            Here you can track your financial performance, including total earnings, downloads, streams, and more
+          </p>
+        </div>
+        <Button
+          size="default"
+          rounded="full"
+          onClick={() => {}}
+          className="shrink-0"
+        >
+          Get Fanlink
+        </Button>
       </div>
 
       {/* Stat cards */}
