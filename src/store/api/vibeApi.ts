@@ -219,10 +219,10 @@ export function normaliseUser(u: UserResponse): User {
   const role = u.role === 'ARTIST' ? 'artist' : u.role === 'ADMIN' ? 'admin' : 'fan'
   // Best display name: stage_name > display_name > full_name > username > email prefix
   const displayName =
-    u.stage_name?.trim() ||
-    u.display_name?.trim() ||
-    u.full_name?.trim() ||
-    u.username ||
+    u.stage_name?.trim()    ||
+    u.display_name?.trim()  ||
+    u.full_name?.trim()     ||
+    u.username              ||
     u.email.split('@')[0]
   return {
     id: u.id,
@@ -263,21 +263,21 @@ function resolveArtistName(t: TrackOut, fallback = ""): string {
  */
 export function normaliseTrack(t: TrackOut, artistName = ""): Track {
   return {
-    id: t.id,
-    title: t.title,
-    artist: resolveArtistName(t, artistName),
-    artistId: t.artist_id ?? "",
+    id:             t.id,
+    title:          t.title,
+    artist:         resolveArtistName(t, artistName),
+    artistId:       t.artist_id ?? "",
     artistUsername: (t as any).artist_username ?? undefined,
-    album: t.album,
-    duration: t.duration ?? 0,
-    audioUrl: assetUrl(t.audio_path),
-    coverUrl: assetUrl(t.cover_path),
-    genre: t.genre ?? "",
-    playCount: t.plays,
-    likeCount: t.likes,
-    releaseDate: t.releaseDate ?? "",
-    isPremium: t.is_for_sale,
-    isLiked: t.isLiked,
+    album:          t.album,
+    duration:       t.duration ?? 0,
+    audioUrl:       assetUrl(t.audio_path),
+    coverUrl:       assetUrl(t.cover_path),
+    genre:          t.genre ?? "",
+    playCount:      t.plays,
+    likeCount:      t.likes,
+    releaseDate:    t.releaseDate ?? "",
+    isPremium:      t.is_for_sale,
+    isLiked:        t.isLiked,
   }
 }
 
@@ -431,9 +431,9 @@ export function normaliseArtistList(raw: unknown): NormalisedSearchArtist[] {
   if (!raw) return []
   const list =
     Array.isArray(raw) ? raw :
-      Array.isArray((raw as any)?.artists) ? (raw as any).artists :
-        Array.isArray((raw as any)?.results) ? (raw as any).results :
-          []
+    Array.isArray((raw as any)?.artists) ? (raw as any).artists :
+    Array.isArray((raw as any)?.results) ? (raw as any).results :
+    []
   return list.map(toSearchArtist)
 }
 
@@ -445,7 +445,7 @@ export interface AuthResponse { user: User; token: string }
 // ─────────────────────────────────────────────────────────
 const rawBase = fetchBaseQuery({
   baseUrl: (import.meta as unknown as { env: Record<string, string> }).env.VITE_API_BASE_URL
-    ?? 'https://api.vibegarage.app',
+    ?? 'https://vibegarage-backend.onrender.com',
   prepareHeaders: (headers, { getState }) => {
     const token = (getState() as RootState).auth.token
     if (token) headers.set('Authorization', `Bearer ${token}`)
@@ -665,7 +665,14 @@ export const vibeApi = createApi({
     /** POST /tracks/upload  multipart: { title, audio, cover?, price?, is_for_sale? } */
     uploadTrack: b.mutation<TrackOut, FormData>({ query: (body) => ({ url: '/tracks/upload', method: 'POST', body }), invalidatesTags: ['Track'] }),
 
-    streamTrack: b.query<unknown, { track_id: string; ad_viewed?: boolean }>({ query: ({ track_id, ad_viewed = false }) => `/tracks/stream/${track_id}?ad_viewed=${ad_viewed}` }),
+    /**
+     * POST /tracks/stream/{track_id}
+     * Registers a "stream" — called once per playback, when a track
+     * crosses the halfway mark (see AudioEngine.tsx). Not tied to a cache
+     * tag: it's a fire-and-forget analytics ping, not something whose
+     * result the UI reads back.
+     */
+    recordStream: b.mutation<unknown, string>({ query: (trackId) => ({ url: `/tracks/stream/${trackId}`, method: 'POST' }) }),
     downloadTrack: b.query<unknown, string>({ query: (id) => `/tracks/download/${id}` }),
     getMyTracks: b.query<TrackOut[], void>({ query: () => '/tracks/my', providesTags: ['Track'] }),
     likeTrack: b.mutation<unknown, string>({ query: (id) => ({ url: `/tracks/${id}/like`, method: 'POST' }), invalidatesTags: ['Track'] }),
@@ -687,14 +694,14 @@ export const vibeApi = createApi({
       query: () => '/albums/drafts',
       providesTags: ['Album'],
     }),
-    /** POST /albums  multipart: { title, cover?, description?, year?, release_date? } */
+    /** POST /albums/create-empty  multipart: { title, description, cover_image, release_date } */
     createAlbum: b.mutation<{ id: string; title: string; status: string }, FormData>({
-      query: (body) => ({ url: '/albums', method: 'POST', body }),
+      query: (body) => ({ url: '/albums/create-empty', method: 'POST', body }),
       invalidatesTags: ['Album'],
     }),
-    /** PUT /albums/{album_id}/tracks  multipart: { title, audio, cover?, genre?, price?, is_for_sale? } */
+    /** POST /albums/{album_id}/tracks  multipart: { title, genre, price, audio_file } */
     addTrackToAlbum: b.mutation<TrackOut, { albumId: string; body: FormData }>({
-      query: ({ albumId, body }) => ({ url: `/albums/${albumId}/tracks`, method: 'PUT', body }),
+      query: ({ albumId, body }) => ({ url: `/albums/${albumId}/tracks`, method: 'POST', body }),
       invalidatesTags: ['Album', 'Track'],
     }),
     /** GET /albums/{album_id} → album details */
@@ -850,7 +857,7 @@ export const {
   useGetArtistProfileQuery, useFollowArtistMutation, useGetFollowStatusQuery, useGetAllArtistsQuery,
   useSetPaymentSettingsMutation, useGetPaymentSettingsQuery,
   useRequestPayoutMutation, useGetMyPayoutsQuery,
-  useUploadTrackMutation, useStreamTrackQuery, useDownloadTrackQuery,
+  useUploadTrackMutation, useRecordStreamMutation, useDownloadTrackQuery,
   useGetMyTracksQuery, useLikeTrackMutation,
   useGetLatestTracksQuery, useGetTrendingTracksQuery, useGetPublicTrackQuery,
   useGetAlbumDraftsQuery,

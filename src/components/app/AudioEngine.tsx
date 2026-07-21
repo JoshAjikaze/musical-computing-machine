@@ -18,6 +18,7 @@ import {
   nextTrack,
   pause,
 } from "@/store/slices/playerSlice"
+import { useRecordStreamMutation } from "@/store/api/vibeApi"
 
 export function AudioEngine() {
   const dispatch = useAppDispatch()
@@ -26,6 +27,25 @@ export function AudioEngine() {
 
   const audioRef = useRef<HTMLAudioElement | null>(null)
 
+  const [recordStream] = useRecordStreamMutation()
+
+  // The timeupdate listener below is registered once, on mount — these
+  // refs let it always read the *current* track and mutation trigger
+  // without needing to be torn down and re-registered on every track
+  // change (which would mean re-attaching listeners on every play).
+  const currentTrackRef = useRef(currentTrack)
+  useEffect(() => { currentTrackRef.current = currentTrack }, [currentTrack])
+
+  const recordStreamRef = useRef(recordStream)
+  useEffect(() => { recordStreamRef.current = recordStream }, [recordStream])
+
+  // Whether the current pass through the track is still eligible to fire
+  // the halfway stream POST. Starts armed, fires once when crossing the
+  // halfway point, then re-arms itself the moment playback is back below
+  // halfway — via a seek back, a manual replay, or a repeat-one loop — so
+  // each fresh listen counts again (Spotify-style), not just the first.
+  const streamArmedRef = useRef(true)
+
   // ── Initialise the audio element once ──────────────────────────────────
   useEffect(() => {
     const audio = new Audio()
@@ -33,7 +53,30 @@ export function AudioEngine() {
     audioRef.current = audio
     _audioRef = audio
 
-    const onTimeUpdate  = () => dispatch(setProgress(audio.currentTime))
+    const onTimeUpdate  = () => {
+      dispatch(setProgress(audio.currentTime))
+
+      // POST /tracks/stream/{track_id} once per listen, the moment we
+      // cross the halfway mark — and again on a replay/seek-back/loop,
+      // since streamArmedRef re-arms below the halfway point.
+      const track = currentTrackRef.current
+      if (track && audio.duration > 0 && !Number.isNaN(audio.duration)) {
+        const halfway = audio.duration / 2
+        if (audio.currentTime < halfway) {
+          streamArmedRef.current = true
+        } else if (streamArmedRef.current) {
+          streamArmedRef.current = false
+          recordStreamRef.current(track.id).catch((err) => {
+            // Non-critical analytics ping — log and move on. Deliberately
+            // not re-arming here: this pass already crossed halfway, so
+            // retrying immediately would just spam the endpoint on every
+            // remaining timeupdate tick if it keeps failing. The next
+            // genuine replay/seek-back will naturally re-arm it.
+            console.error("[AudioEngine] recordStream failed:", err)
+          })
+        }
+      }
+    }
     const onLoadedMeta  = () => dispatch(setDuration(audio.duration))
     const onEnded       = () => {
       if (audio.loop) return          // repeatMode === 'one' handled via loop
@@ -84,6 +127,7 @@ export function AudioEngine() {
       audio.src = currentTrack.audioUrl
       audio.load()
       dispatch(setProgress(0))
+      streamArmedRef.current = true
     }
   }, [currentTrack?.audioUrl, dispatch])
 

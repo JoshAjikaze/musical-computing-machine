@@ -45,7 +45,6 @@ export interface PendingTrack {
   genre: string
   price: string
   audioFile: File
-  coverFile: File | null
   status: "pending" | "uploading" | "done" | "error"
   errorMsg?: string
 }
@@ -657,7 +656,6 @@ function AlbumTracksForm({
 
   // Per-track form state
   const [audioFile, setAudioFile] = useState<File | null>(null)
-  const [coverFile, setCoverFile] = useState<File | null>(null)
   const [audioError, setAudioError] = useState("")
   const [showForm, setShowForm] = useState(pendingTracks.length === 0)
 
@@ -675,14 +673,12 @@ function AlbumTracksForm({
       genre: v.genre,
       price: v.price,
       audioFile,
-      coverFile,
       status: "pending",
     }
     onAddTrack(track)
     // Reset for next track
     form.reset()
     setAudioFile(null)
-    setCoverFile(null)
     setShowForm(false)
   })
 
@@ -698,11 +694,9 @@ function AlbumTracksForm({
       onUpdateStatus(track.id, "uploading")
       const fd = new FormData()
       fd.append("title", track.title)
-      fd.append("audio", track.audioFile)
       fd.append("genre", track.genre)
       fd.append("price", track.price)
-      fd.append("is_for_sale", track.price !== "0" ? "true" : "false")
-      if (track.coverFile) fd.append("cover", track.coverFile)
+      fd.append("audio_file", track.audioFile)
       try {
         await addTrackToAlbum({ albumId, body: fd }).unwrap()
         onUpdateStatus(track.id, "done")
@@ -800,18 +794,6 @@ function AlbumTracksForm({
                       type="audio"
                     />
                     {audioError && <p className="text-xs text-vibe-red">{audioError}</p>}
-                  </div>
-
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-vibe-text-secondary">Track art <span className="text-vibe-text-muted font-normal">(optional)</span></p>
-                    <FileDropzone
-                      accept="image/*"
-                      hint="JPG, PNG or GIF – Max 4MB"
-                      maxSizeMB={4}
-                      value={coverFile}
-                      onChange={setCoverFile}
-                      type="image"
-                    />
                   </div>
 
                   <FormField control={form.control} name="price" render={({ field }) => (
