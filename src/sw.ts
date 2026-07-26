@@ -22,7 +22,20 @@ declare const self: ServiceWorkerGlobalScope
 // ─────────────────────────────────────────────────────────
 precacheAndRoute(self.__WB_MANIFEST)
 
-registerRoute(new NavigationRoute(createHandlerBoundToURL('/index.html')))
+// Navigations to a real static file (ads.txt, manifest.webmanifest, the
+// legal .txt files, etc.) must NOT be swallowed by the SPA fallback below.
+// NavigationRoute matches every `mode: 'navigate'` request by default with
+// no denylist, so once this SW controls the page, typing /ads.txt into the
+// address bar was silently returning index.html instead of the real file —
+// harmless to Google's ads.txt crawler (no SW there), but broken for any
+// browser that had already visited the app.
+const STATIC_FILE_EXTENSION = /\.[a-zA-Z0-9]{2,5}$/
+
+registerRoute(
+  new NavigationRoute(createHandlerBoundToURL('/index.html'), {
+    denylist: [STATIC_FILE_EXTENSION],
+  })
+)
 
 clientsClaim()
 
