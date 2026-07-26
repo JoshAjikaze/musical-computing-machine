@@ -5,7 +5,7 @@ import {
 import { MoreVertical, Wallet, Download, TrendingUp, Music2, Receipt } from "lucide-react"
 import { StatCard } from "@/components/app/StatCard"
 import { useAppSelector } from "@/hooks/redux"
-import { useGetArtistStatsQuery, useGetMyTracksQuery, normaliseTrack } from "@/store/api/vibeApi"
+import { useGetArtistStatsQuery, useGetMyTracksQuery, normaliseTrack, useGetArtistEarningsQuery } from "@/store/api/vibeApi"
 import { formatCurrency, formatPlays } from "@/lib/formatters"
 import { Button } from "@/components/ui/button"
 
@@ -47,6 +47,7 @@ export function EarningsPage() {
 
   const { data: stats, isFetching: statsLoading } = useGetArtistStatsQuery()
   const { data: rawTracks = [], isLoading: tracksLoading } = useGetMyTracksQuery()
+  const { data: earnings } = useGetArtistEarningsQuery()
 
   const topTracks = rawTracks
     .map((t) => normaliseTrack(t, artistLabel))
@@ -56,7 +57,7 @@ export function EarningsPage() {
   const STATS = [
     {
       label: "Total Earnings",
-      value: formatCurrency(0),
+      value: formatCurrency(earnings?.available_balance_ngn || 0),
       icon: <Wallet className="h-5 w-5 text-green-400" />,
     },
     {

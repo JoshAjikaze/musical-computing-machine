@@ -26,6 +26,7 @@ import {
   usePublishAlbumMutation,
   useSaveAlbumDraftMutation,
   useGetAlbumDraftsQuery,
+  useGetAlbumDraftsTracksQuery,
 } from "@/store/api/vibeApi"
 import { toast } from "sonner"
 
@@ -653,6 +654,9 @@ function AlbumTracksForm({
 }) {
   const [addTrackToAlbum] = useAddTrackToAlbumMutation()
   const [isUploading, setIsUploading] = useState(false)
+  const { data: existingDraftTracks = [], isLoading: draftTracksLoading, isError: draftTracksError } = useGetAlbumDraftsTracksQuery(albumId, {
+    skip: !albumId,
+  })
 
   // Per-track form state
   const [audioFile, setAudioFile] = useState<File | null>(null)
@@ -714,6 +718,45 @@ function AlbumTracksForm({
 
   return (
     <div className="flex flex-col gap-5 flex-1">
+      {albumId && (
+        <div className="rounded-xl border border-vibe-onyx-400 bg-vibe-onyx-300/70 p-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium text-vibe-text-secondary">Current draft tracks</p>
+            <span className="text-[11px] uppercase tracking-wide text-vibe-text-muted">
+              {draftTracksLoading ? "Loading" : `${existingDraftTracks.length} track${existingDraftTracks.length === 1 ? "" : "s"}`}
+            </span>
+          </div>
+
+          {draftTracksLoading ? (
+            <div className="flex items-center gap-2 text-sm text-vibe-text-muted py-2">
+              <Loader2 className="h-4 w-4 animate-spin shrink-0" />
+              Loading draft tracks…
+            </div>
+          ) : draftTracksError ? (
+            <div className="flex items-center gap-2 text-sm text-vibe-red py-2">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              Couldn’t load tracks from this draft.
+            </div>
+          ) : existingDraftTracks.length === 0 ? (
+            <div className="text-sm text-vibe-text-muted">No tracks have been added to this draft yet.</div>
+          ) : (
+            <div className="max-h-40 space-y-2 overflow-y-auto pr-1">
+              {existingDraftTracks.map((track, index) => (
+                <div key={track.id ?? `${albumId}-${index}`} className="flex items-center gap-2 rounded-lg border border-vibe-onyx-400 bg-vibe-onyx-200/70 px-2.5 py-2">
+                  <Music2 className="h-3.5 w-3.5 text-vibe-text-muted shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm text-white">{track.title ?? `Track ${index + 1}`}</p>
+                    {track.genre && <p className="text-[11px] text-vibe-text-muted">{track.genre}</p>}
+                  </div>
+                  {track.price !== undefined && track.price !== null && (
+                    <span className="text-[11px] text-vibe-text-muted">₦{String(track.price)}</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Track list */}
       {pendingTracks.length > 0 && (
