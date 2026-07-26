@@ -86,7 +86,7 @@ export function EarningsPage() {
         <Button
           size="default"
           rounded="full"
-          onClick={() => {}}
+          onClick={() => window.open("https://vibegaragefanlink.netlify.app/", "_blank", "noopener,noreferrer")}
           className="shrink-0"
         >
           Get Fanlink

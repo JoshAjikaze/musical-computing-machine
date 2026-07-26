@@ -34,8 +34,7 @@ export function ArtistProfilePage() {
   const [optimisticFollowing, setOptimisticFollowing] = useState<boolean | null>(null)
   const [shareOpen, setShareOpen] = useState(false)
 
-  const { data: profile, isLoading, isError } =
-    useGetArtistProfileQuery(username ?? "", { skip: !username })
+  const { data: profile, isLoading, isError } = useGetArtistProfileQuery(username ?? "", { skip: !username })
 
   const artistId = profile?.id
   // GET /public/artists/artist/{username}/follow-status → { isfollowed }.
@@ -96,7 +95,8 @@ export function ArtistProfilePage() {
     ? assetUrl(profile.avatar)
     : null
   const tracks = Array.isArray(profile.tracks) ? profile.tracks : []
-  const stats = profile.stats ?? { total_streams: 0, track_count: 0 }
+  const totalStreams = tracks.reduce((sum, track) => sum + Number(track.plays ?? 0), 0)
+  const trackCount = tracks.length || profile.stats?.track_count || 0
 
   function playAll() {
     if (!tracks.length) return
@@ -224,8 +224,8 @@ export function ArtistProfilePage() {
           <p className="text-sm text-vibe-text-muted mb-4">@{artistUsername}</p>
 
           <div className="flex items-center gap-6 flex-wrap">
-            <StatPill icon={<Headphones className="h-3.5 w-3.5" />} label="Streams" value={stats.total_streams} />
-            <StatPill icon={<Disc3 className="h-3.5 w-3.5" />} label="Tracks" value={stats.track_count} />
+            <StatPill icon={<Headphones className="h-3.5 w-3.5" />} label="Streams" value={totalStreams} />
+            <StatPill icon={<Disc3 className="h-3.5 w-3.5" />} label="Tracks" value={trackCount} />
             {profile.joined_date && (
               <div className="flex items-center gap-1.5">
                 <Calendar className="h-3.5 w-3.5 text-vibe-text-muted" />

@@ -114,6 +114,7 @@ export interface ArtistProfileOut {
     title: string
     cover_art: string | null
     duration: number
+    plays?: number | null
   }[]
 }
 
