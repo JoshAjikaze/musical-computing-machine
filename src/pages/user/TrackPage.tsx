@@ -13,9 +13,10 @@ import { ShareDialog } from "@/components/app/ShareDialog"
 
 /**
  * Public track landing page — what a shared track link opens to. No login
- * required to view; Play and Like redirect to /login if the visitor isn't
- * signed in (see requireAuth below). Mirrors the auth-gating pattern used
- * in ArtistProfilePage, which has the same public/protected dual-use shape.
+ * required to view or play; only Like redirects to /login if the visitor
+ * isn't signed in (see requireAuth below), since liking needs to persist to
+ * an account. Mirrors the auth-gating pattern used in ArtistProfilePage,
+ * which has the same public/protected dual-use shape.
  */
 export function TrackPage() {
   const { trackId } = useParams<{ trackId: string }>()
@@ -61,10 +62,11 @@ export function TrackPage() {
   }
 
   function handlePlay() {
-    requireAuth(() => {
-      if (isActive) dispatch(togglePlay())
-      else dispatch(playTrack({ track, queue: [track] }))
-    })
+    // Deliberately NOT gated behind requireAuth — a shared track link should
+    // be playable by anyone who receives it, signed in or not. Only actions
+    // that need to persist to an account (liking) require sign-in.
+    if (isActive) dispatch(togglePlay())
+    else dispatch(playTrack({ track, queue: [track] }))
   }
 
   async function handleLike() {

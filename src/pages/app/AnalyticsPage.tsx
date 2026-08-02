@@ -17,7 +17,7 @@ import AdvertPlaceholder from "@/components/app/AdvertPlaceholder"
 export function AnalyticsPage() {
   const [uploadOpen, setUploadOpen] = useState(false)
   const { user } = useAppSelector((s) => s.auth)
-  const displayName = user?.displayName ?? "Desire"
+  const displayName = user?.stageName || user?.displayName || user?.username || "there"
 
   const { data: DashboardData, isFetching: DashboardFetching } = useGetArtistDashboardQuery()
   const { data: StatsData, isFetching: StatsFetching } = useGetArtistStatsQuery()

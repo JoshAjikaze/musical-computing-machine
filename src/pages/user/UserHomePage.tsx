@@ -15,7 +15,7 @@ export function UserHomePage() {
   const dispatch = useAppDispatch()
   const navigate  = useNavigate()
   const { user } = useAppSelector((s) => s.auth)
-  const displayName = user?.displayName ?? "Desire"
+  const displayName = user?.stageName || user?.displayName || user?.username || "there"
 
   const { data: trendingRaw, isLoading: trendingLoading } =
     vibeApi.useGetDiscoveryTrendingQuery({ limit: 10 })

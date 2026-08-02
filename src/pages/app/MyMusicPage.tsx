@@ -3,6 +3,7 @@ import { MoreVertical, Music2, TrendingUp } from "lucide-react"
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { Button } from "@/components/ui/button"
 import { UploadPanel } from "@/components/app/UploadPanel"
+import { AlbumDetailsDialog } from "@/components/app/AlbumDetailsDialog"
 import { useAppDispatch, useAppSelector } from "@/hooks/redux"
 import { playTrack } from "@/store/slices/playerSlice"
 import { useGetMyTracksQuery, normaliseTrack } from "@/store/api/vibeApi"
@@ -13,6 +14,7 @@ const ALBUM_SLOT_COUNT = 4
 
 export function MyMusicPage() {
   const [uploadOpen, setUploadOpen] = useState(false)
+  const [openAlbumId, setOpenAlbumId] = useState<string | null>(null)
   const dispatch = useAppDispatch()
 
   const { data: rawTracks = [], isLoading } = useGetMyTracksQuery()
@@ -25,10 +27,10 @@ export function MyMusicPage() {
   const topFive = [...tracks].sort((a, b) => b.playCount - a.playCount).slice(0, 5)
 
   // Group unique albums (by album title, since some may share)
-  const albumMap = new Map<string, { title: string; coverUrl: string }>()
+  const albumMap = new Map<string, { id: string | null; title: string; coverUrl: string }>()
   rawTracks.forEach((t) => {
     if (t.album && t.album !== "Single" && !albumMap.has(t.album)) {
-      albumMap.set(t.album, { title: t.album, coverUrl: t.cover_path ?? "" })
+      albumMap.set(t.album, { id: t.album_id ?? null, title: t.album, coverUrl: t.cover_path ?? "" })
     }
   })
   const albums = Array.from(albumMap.values())
@@ -66,7 +68,12 @@ export function MyMusicPage() {
                   ))
                   : <>
                     {albums.map((a) => (
-                      <AlbumCard key={a.title} title={a.title} coverUrl={a.coverUrl} />
+                      <AlbumCard
+                        key={a.title}
+                        title={a.title}
+                        coverUrl={a.coverUrl}
+                        onClick={a.id ? () => setOpenAlbumId(a.id) : undefined}
+                      />
                     ))}
                     {Array.from({ length: Math.max(0, ALBUM_SLOT_COUNT - albums.length) }).map((_, i) => (
                       <EmptyAlbumSlot key={`e-${i}`} />
@@ -200,13 +207,28 @@ export function MyMusicPage() {
       </div>
 
       <UploadPanel open={uploadOpen} onClose={() => setUploadOpen(false)} />
+      <AlbumDetailsDialog
+        albumId={openAlbumId}
+        open={openAlbumId !== null}
+        onClose={() => setOpenAlbumId(null)}
+      />
     </>
   )
 }
 
-function AlbumCard({ title, coverUrl }: { title: string; coverUrl: string }) {
+function AlbumCard({
+  title, coverUrl, onClick,
+}: {
+  title: string
+  coverUrl: string
+  onClick?: () => void
+}) {
   return (
-    <div className="shrink-0 w-[180px] md:w-[200px] cursor-pointer group">
+    <div
+      className="shrink-0 w-[180px] md:w-[200px] cursor-pointer group"
+      onClick={onClick}
+      role={onClick ? "button" : undefined}
+    >
       <div className="relative aspect-square rounded-md overflow-hidden mb-2">
         {coverUrl ? (
           <img src={coverUrl} alt={title}

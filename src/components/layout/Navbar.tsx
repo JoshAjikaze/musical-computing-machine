@@ -69,6 +69,7 @@ export function Navbar() {
               </button>
             ))}
             <button
+              onClick={() => window.open("https://blog.vibegarage.com", "_blank", "noopener,noreferrer")}
               className="text-sm font-body font-medium text-white hover:text-vibe-text-secondary transition-colors"
             >
               Blog

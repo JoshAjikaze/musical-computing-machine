@@ -46,6 +46,8 @@ import { AuthGuard } from "./components/app/AuthGuard"
 import { ConsentBanner } from "./components/app/ConsentBanner"
 import { ProtectedRoute } from "./components/auth/ProtectedRoute"
 import { useEffect } from "react"
+import { useSelector } from "react-redux"
+import type { RootState } from "./store"
 import { loadAdSenseScript } from "./lib/adsense"
 
 const AUTH_ROUTES = ["/login", "/join", "/verify", "/forgot-password"]
@@ -62,6 +64,21 @@ function Layout() {
 /** Wrap each page in a SectionErrorBoundary so one broken route never kills the whole shell */
 function Page({ children }: { children: React.ReactNode }) {
   return <SectionErrorBoundary>{children}</SectionErrorBoundary>
+}
+
+/**
+ * Default "/" route. Signed-out visitors see the marketing LandingPage as
+ * before; already-authenticated users are sent straight to their dashboard
+ * (artist → /app, listener → /listen, admin → /admin) instead of the
+ * homepage. Role → dashboard mapping mirrors LoginPage's post-login redirect.
+ */
+function HomeRoute() {
+  const { isAuthenticated, user } = useSelector((state: RootState) => state.auth)
+  if (isAuthenticated && user) {
+    const dest = user.role === "admin" ? "/admin" : user.role === "artist" ? "/app" : "/listen"
+    return <Navigate to={dest} replace />
+  }
+  return <LandingPage />
 }
 
 function App() {
@@ -82,7 +99,7 @@ function App() {
             <ConsentBanner />
             <Routes>
               {/* Public */}
-            <Route path="/"                    element={<Page><LandingPage /></Page>} />
+            <Route path="/"                    element={<Page><HomeRoute /></Page>} />
             <Route path="/privacy-policy"      element={<Page><PrivacyPolicyPage /></Page>} />
             <Route path="/termsandconditions"  element={<Page><TermsAndConditionsPage /></Page>} />
 
